@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<product productid="rcd_pm_log" active="1">
+	<title>Private Messages and Email Log</title>
+	<description>Private Messages and Email Loggind and administering</description>
+	<version>2.2</version>
+	<url><![CDATA[http://www.vbulletin.org/forum/misc.php?do=producthelp&pid=rcd_pm_log]]></url>
+	<versioncheckurl><![CDATA[http://www.vbulletin.org/forum/misc.php?do=productcheck&pid=rcd_pm_log]]></versioncheckurl>
+	<apm_releasedate>1239656400</apm_releasedate>
+	<apm_author>Dmitry Titov, Vitaly Puzrin</apm_author>
+	<apm_relatedurl />
+	<apm_extrainfo />
+	<apm_extraedit />
+	<dependencies>
+	</dependencies>
+	<codes>
+		<code version="1.0">
+			<installcode><![CDATA[$db->query( "CREATE TABLE IF NOT EXISTS `" . TABLE_PREFIX . "rcd_log_pm` (
+  `logid` int(10) unsigned NOT NULL auto_increment,
+  `pmid` int(10) unsigned NOT NULL,
+  `pmtextid` int(10) unsigned NOT NULL,
+  `fromuserip` varchar(15) NOT NULL,
+  `fromuserid` int(10) unsigned NOT NULL default '0',
+  `fromusername` varchar(100) NOT NULL default '',
+  `fromuseremail` varchar(100) NOT NULL,
+  `touserid` int(10) unsigned NOT NULL,
+  `tousername` varchar(100) NOT NULL,
+  `touseremail` varchar(100) NOT NULL,
+  `title` varchar(250) NOT NULL default '',
+  `message` mediumtext,
+  `iconid` smallint(5) unsigned NOT NULL default '0',
+  `dateline` int(10) unsigned NOT NULL default '0',
+  `showsignature` smallint(5) unsigned NOT NULL default '0',
+  `allowsmilie` smallint(5) unsigned NOT NULL default '1',
+  PRIMARY KEY  (`logid`),
+  KEY `touserid` (`touserid`),
+  KEY `fromuserid` (`fromuserid`),
+  KEY `dateline` (`dateline`)
+) ENGINE=MyISAM" );]]></installcode>
+			<uninstallcode><![CDATA[$db->query( "DROP TABLE IF EXISTS `" . TABLE_PREFIX . "rcd_log_pm`" );]]></uninstallcode>
+		</code>
+		<code version="1.1">
+			<installcode><![CDATA[$db->query( "ALTER TABLE `" . TABLE_PREFIX . "rcd_log_pm` ADD INDEX ( `fromusername` )" );
+
+$db->query( "ALTER TABLE `" . TABLE_PREFIX . "rcd_log_pm` ADD INDEX ( `tousername` )" );]]></installcode>
+			<uninstallcode />
+		</code>
+		<code version="1.6">
+			<installcode><![CDATA[$db->hide_errors();
+
+$db->query_write("ALTER TABLE `". TABLE_PREFIX ."administrator` ADD `admin_view_pm_log` BOOL DEFAULT '0' NOT NULL");
+
+$db->show_errors();]]></installcode>
+			<uninstallcode><![CDATA[$db->hide_errors();
+
+$db->query_write("ALTER TABLE `". TABLE_PREFIX ."administrator` DROP `admin_view_pm_log`");
+
+$db->show_errors();]]></uninstallcode>
+		</code>
+		<code version="2.0">
+			<installcode><![CDATA[$db->hide_errors();
+
+$db->query_write("
+  ALTER TABLE `". TABLE_PREFIX ."rcd_log_pm`
+    DROP INDEX `dateline`,
+    DROP INDEX `fromusername`,
+    DROP INDEX `tousername`,
+    ADD UNIQUE `fromuser-logid` ( `fromusername` , `logid` ),
+    ADD UNIQUE `touser-logid` ( `tousername`, `logid` )
+");
+
+$db->show_errors();]]></installcode>
+			<uninstallcode />
+		</code>
+		<code version="2.1">
+			<installcode><![CDATA[$db->hide_errors();
+
+$db->query_write("
+  ALTER TABLE `". TABLE_PREFIX ."rcd_log_pm`
+    DROP INDEX `fromuserid`,
+    DROP INDEX `touserid`
+");
+
+$db->show_errors();]]></installcode>
+			<uninstallcode />
+		</code>
+	</codes>
+	<templates>
+		<template name="rcd_log_pm_link" templatetype="template" date="1236015132" username="Dimit" version=""><![CDATA[<tr><td class="vbmenu_option"><a href="$admincpdir/index.php?loc=rcd_pm_log.php%3F$session[sessionurl]search_context%3Duserid%26keywords%3D$post[userid]" rel="nofollow">$vbphrase[private_messages] $post[username]</a></td></tr>]]></template>
+		<template name="rcd_log_pm_link_memberinfo" templatetype="template" date="1236014519" username="Dimit" version=""><![CDATA[<li class="thead" style="float:$stylevar[right]"><a href="$admincpdir/index.php?loc=rcd_pm_log.php%3F$session[sessionurl]search_context%3Duserid%26keywords%3D$userinfo[userid]" rel="nofollow">$vbphrase[private_messages]</a></li>]]></template>
+	</templates>
+	<plugins>
+		<plugin active="1" executionorder="5">
+			<title>Add valid field to DM</title>
+			<hookname>admindata_start</hookname>
+			<phpcode><![CDATA[$this->validfields['admin_view_pm_log'] = array(TYPE_BOOL, REQ_NO);]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="5">
+			<title>Show permission field</title>
+			<hookname>admin_permissions_form</hookname>
+			<phpcode><![CDATA[print_yes_no_row($vbphrase["admin_view_pm_log"], "admin_view_pm_log", $user['admin_view_pm_log']);]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="5">
+			<title>Save permission</title>
+			<hookname>admin_permissions_process</hookname>
+			<phpcode><![CDATA[$vbulletin->input->clean_array_gpc('p', array(
+  'admin_view_pm_log' => TYPE_BOOL
+));
+
+$admindm->set('admin_view_pm_log', $vbulletin->GPC['admin_view_pm_log']);]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="5">
+			<title>Cache templates</title>
+			<hookname>cache_templates</hookname>
+			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
+rcd_pm_log_CacheTemplates($globaltemplates);]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="5">
+			<title>Check permissions</title>
+			<hookname>can_administer</hookname>
+			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
+rcd_pm_log_CheckPermissions($do, $admin, $return_value);]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="5">
+			<title>Memberinfo PM Log link</title>
+			<hookname>member_complete</hookname>
+			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
+$rcd_pm_log_link = rcd_pm_log_MemberinfoPMLoglink();]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="5">
+			<title>Show PM using misc.php</title>
+			<hookname>misc_start</hookname>
+			<phpcode><![CDATA[if ($_REQUEST['do'] == 'showpm')
+{
+  include_once(DIR . "/" . $admincpdir . "/rcd_pm_log.php");
+  eval('print_output("", false);');
+}]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="5">
+			<title>Modify template</title>
+			<hookname>parse_templates</hookname>
+			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
+rcd_pm_log_ModifyTemplate();]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="1">
+			<title>Log PM</title>
+			<hookname>pmdata_postsave_recipient</hookname>
+			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
+rcd_pm_log_LogPM($this, $user, $pmtextid);]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="5">
+			<title>Show link to user PM log</title>
+			<hookname>postbit_display_complete</hookname>
+			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
+$template_hook['postbit_user_popup'] .= rcd_pm_log_ShowlinkToUserPMLog();]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="1">
+			<title>Log outbound email</title>
+			<hookname>sendmessage_domailmember</hookname>
+			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
+rcd_pm_log_LogOutboundEmail($userinfo);]]></phpcode>
+		</plugin>
+		<plugin active="1" executionorder="5">
+			<title>Update username</title>
+			<hookname>userdata_update_username</hookname>
+			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
+rcd_pm_log_UpdateUsername($this, $username, $userid);]]></phpcode>
+		</plugin>
+	</plugins>
+	<phrases>
+		<phrasetype name="Control Panel Global" fieldname="cpglobal">
+			<phrase name="rcd_pm_log" date="1211812410" username="Wildev" version="1.0"><![CDATA[PM Log]]></phrase>
+			<phrase name="search_context" date="1212053355" username="Wildev" version="1.0"><![CDATA[Where]]></phrase>
+		</phrasetype>
+		<phrasetype name="Permissions" fieldname="cppermission">
+			<phrase name="admin_view_pm_log" date="1233936445" username="Wildev" version=""><![CDATA[Can view PM logs]]></phrase>
+		</phrasetype>
+		<phrasetype name="Scheduled Tasks" fieldname="cron">
+			<phrase name="task_rcd_pm_log_clean_cron_desc" date="1212168478" username="Wildev" version="1.0"><![CDATA[Periodically delete old messages from log]]></phrase>
+			<phrase name="task_rcd_pm_log_clean_cron_log" date="1212168478" username="Wildev" version="1.0"><![CDATA[Cleaning Log]]></phrase>
+			<phrase name="task_rcd_pm_log_clean_cron_title" date="1212168478" username="Wildev" version="1.0"><![CDATA[Clean Log]]></phrase>
+		</phrasetype>
+		<phrasetype name="GLOBAL" fieldname="global">
+			<phrase name="dump_from" date="1236025694" username="Dimit" version=""><![CDATA[From]]></phrase>
+			<phrase name="dump_to" date="1236025733" username="Dimit" version=""><![CDATA[To]]></phrase>
+			<phrase name="empty_folder" date="1236025572" username="Dimit" version=""><![CDATA[Empty Folder]]></phrase>
+			<phrase name="ip" date="1236025625" username="Dimit" version=""><![CDATA[IP]]></phrase>
+			<phrase name="sent_date" date="1236025764" username="Dimit" version=""><![CDATA[Sent Date]]></phrase>
+			<phrase name="view_message" date="1236025862" username="Dimit" version=""><![CDATA[View Message]]></phrase>
+		</phrasetype>
+		<phrasetype name="vBulletin Settings" fieldname="vbsettings">
+			<phrase name="setting_rcd_pm_log_keep_time_desc" date="1211818317" username="Wildev" version="1.0" />
+			<phrase name="setting_rcd_pm_log_keep_time_title" date="1211818317" username="Wildev" version="1.0"><![CDATA[Logs keeping time (days)]]></phrase>
+			<phrase name="setting_rcd_pm_log_rows_per_page_desc" date="1211894757" username="Wildev" version="1.0" />
+			<phrase name="setting_rcd_pm_log_rows_per_page_title" date="1211894757" username="Wildev" version="1.0"><![CDATA[Rows per page]]></phrase>
+			<phrase name="setting_rcd_pm_log_show_link_desc" date="1231734100" username="Wildev" version="1.3" />
+			<phrase name="setting_rcd_pm_log_show_link_title" date="1231734100" username="Wildev" version="1.3"><![CDATA[Show link to user PM log?]]></phrase>
+			<phrase name="settinggroup_rcd_pm_log" date="1211818029" username="Wildev" version="1.0"><![CDATA[Private Messages Log]]></phrase>
+		</phrasetype>
+	</phrases>
+	<options>
+		<settinggroup name="rcd_pm_log" displayorder="100">
+			<setting varname="rcd_pm_log_keep_time" displayorder="1">
+				<defaultvalue>365</defaultvalue>
+			</setting>
+			<setting varname="rcd_pm_log_rows_per_page" displayorder="2">
+				<defaultvalue>20</defaultvalue>
+			</setting>
+			<setting varname="rcd_pm_log_show_link" displayorder="50">
+				<datatype>boolean</datatype>
+				<optioncode>yesno</optioncode>
+				<defaultvalue>0</defaultvalue>
+			</setting>
+		</settinggroup>
+	</options>
+	<helptopics>
+	</helptopics>
+	<cronentries>
+		<cron varname="rcd_pm_log_clean_cron" active="1" loglevel="0">
+			<filename>./includes/cron/rcd_pm_log_cleanup.php</filename>
+			<scheduling weekday="0" day="-1" hour="0" minute="16" />
+		</cron>
+	</cronentries>
+	<faqentries>
+	</faqentries>
+	<templateedits>
+	</templateedits>
+</product>
