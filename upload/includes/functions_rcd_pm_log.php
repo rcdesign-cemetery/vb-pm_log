@@ -108,47 +108,25 @@ function rcd_pm_log_CheckPermissions (&$do, &$admin, &$return_value)
 #   Memberinfo PM Log link
 #
 
-function rcd_pm_log_MemberinfoPMLoglink ()
+function rcd_pm_log_MemberinfoPMLoglink ($userinfo)
 {
   require_once(DIR . '/includes/adminfunctions.php');
 
   $rcd_pm_log_link = '';
-
   if (THIS_SCRIPT == 'member'
       AND (can_administer('adminviewpmlog') OR can_administer_pm_log()))
   {
     global $admincpdir, $vbphrase, $session, $stylevar, $userinfo;
 
-    eval('$rcd_pm_log_link .= "' . fetch_template('rcd_log_pm_link_memberinfo') . '";');
+    $private_message_url = form_private_message_url( $userinfo['userid'] );
+    
+    $templater = vB_Template::create('rcd_log_pm_link_memberinfo');
+	$templater->register('private_message_url', $private_message_url);
+    $rcd_pm_log_link = $templater->render();
   }
 
   return $rcd_pm_log_link;
 }
-
-
-#
-#   Modify template
-#
-
-function rcd_pm_log_ModifyTemplate ()
-{
-  global $vbulletin;
-
-  if ($vbulletin->options['rcd_pm_log_show_link'])
-  {
-    $rcd_pm_search  = '$vbphrase[edit_user_profile]</a></li>';
-    $rcd_pm_replace = $rcd_pm_search . '$rcd_pm_log_link';
-
-    $vbulletin->templatecache['MEMBERINFO'] = str_replace(
-        $rcd_pm_search  ,
-        $rcd_pm_replace ,
-        $vbulletin->templatecache['MEMBERINFO']
-      );
-
-    unset( $rcd_pm_search, $rcd_pm_replace );
-  }
-}
-
 
 #
 #   Log PM
@@ -188,7 +166,7 @@ function rcd_pm_log_LogPM (&$obj, &$user, &$pmtextid)
 #   Show link to user PM log
 #
 
-function rcd_pm_log_ShowlinkToUserPMLog ()
+function rcd_pm_log_ShowlinkToUserPMLog ($post)
 {
   require_once(DIR . '/includes/adminfunctions.php');
 
@@ -197,9 +175,11 @@ function rcd_pm_log_ShowlinkToUserPMLog ()
   if (THIS_SCRIPT == 'showthread'
       AND (can_administer('adminviewpmlog') OR can_administer_pm_log()))
   {
-    global $admincpdir, $session, $post, $vbphrase;
-
-    eval('$rcd_log_pm_link .= "' . fetch_template('rcd_log_pm_link') . '";');
+    $private_message_url = form_private_message_url( $post['userid'] );
+    $templater = vB_Template::create('rcd_log_pm_link');
+	$templater->register('private_message_url', $private_message_url);
+    $templater->register('post_username', $post['username']);
+    $rcd_log_pm_link = $templater->render();
   }
 
   return $rcd_log_pm_link;
@@ -253,4 +233,11 @@ function rcd_pm_log_UpdateUsername (&$obj, &$username, &$userid)
     `fromusername` = '" . $obj->dbobject->escape_string($username) . "'
     WHERE `fromuserid` = $userid
   ");
+}
+
+function form_private_message_url($user_id)
+{
+    global $vbulletin, $session;
+    $admincpdir = $vbulletin->config['Misc']['admincpdir'];
+    return $admincpdir . '/index.php?loc=rcd_pm_log.php%3F' . $session['sessionurl'] . 'search_context%3Duserid%26keywords%3D' . $user_id;
 }

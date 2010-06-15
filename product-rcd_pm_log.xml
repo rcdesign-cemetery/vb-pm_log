@@ -3,7 +3,7 @@
 <product productid="rcd_pm_log" active="1">
 	<title>Private Messages and Email Log</title>
 	<description>Private Messages and Email Loggind and administering</description>
-	<version>2.2</version>
+	<version>2.3</version>
 	<url><![CDATA[http://www.vbulletin.org/forum/misc.php?do=producthelp&pid=rcd_pm_log]]></url>
 	<versioncheckurl><![CDATA[http://www.vbulletin.org/forum/misc.php?do=productcheck&pid=rcd_pm_log]]></versioncheckurl>
 	<apm_releasedate>1239656400</apm_releasedate>
@@ -86,8 +86,13 @@ $db->show_errors();]]></installcode>
 		</code>
 	</codes>
 	<templates>
-		<template name="rcd_log_pm_link" templatetype="template" date="1236015132" username="Dimit" version=""><![CDATA[<tr><td class="vbmenu_option"><a href="$admincpdir/index.php?loc=rcd_pm_log.php%3F$session[sessionurl]search_context%3Duserid%26keywords%3D$post[userid]" rel="nofollow">$vbphrase[private_messages] $post[username]</a></td></tr>]]></template>
-		<template name="rcd_log_pm_link_memberinfo" templatetype="template" date="1236014519" username="Dimit" version=""><![CDATA[<li class="thead" style="float:$stylevar[right]"><a href="$admincpdir/index.php?loc=rcd_pm_log.php%3F$session[sessionurl]search_context%3Duserid%26keywords%3D$userinfo[userid]" rel="nofollow">$vbphrase[private_messages]</a></li>]]></template>
+		<template name="rcd_log_pm_link" templatetype="template" date="1236015132" username="Dimit" version=""><![CDATA[<li class="right">
+			<img src="{vb:stylevar imgdir_siteicons}/message.png" alt="" />
+			<a href="{vb:raw private_message_url}" rel='nofollow'>
+				{vb:rawphrase private_messages}
+			</a>
+		</li>]]></template>
+		<template name="rcd_log_pm_link_memberinfo" templatetype="template" date="1236014519" username="Dimit" version=""><![CDATA[<div class="block"><a href="{vb:raw private_message_url}" rel="nofollow">{vb:rawphrase private_messages} {vb:raw post_username}</a></div>]]></template>
 	</templates>
 	<plugins>
 		<plugin active="1" executionorder="5">
@@ -125,22 +130,18 @@ rcd_pm_log_CheckPermissions($do, $admin, $return_value);]]></phpcode>
 			<title>Memberinfo PM Log link</title>
 			<hookname>member_complete</hookname>
 			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-$rcd_pm_log_link = rcd_pm_log_MemberinfoPMLoglink();]]></phpcode>
+$template_hook['profile_sidebar_first'] .= rcd_pm_log_MemberinfoPMLoglink($userinfo);]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="5">
 			<title>Show PM using misc.php</title>
 			<hookname>misc_start</hookname>
 			<phpcode><![CDATA[if ($_REQUEST['do'] == 'showpm')
 {
-  include_once(DIR . "/" . $admincpdir . "/rcd_pm_log.php");
+  $admincpdir = $vbulletin->config['Misc']['admincpdir'];
+
+  include_once(DIR . '/'. $admincpdir . "/rcd_pm_log.php");
   eval('print_output("", false);');
 }]]></phpcode>
-		</plugin>
-		<plugin active="1" executionorder="5">
-			<title>Modify template</title>
-			<hookname>parse_templates</hookname>
-			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-rcd_pm_log_ModifyTemplate();]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="1">
 			<title>Log PM</title>
@@ -152,7 +153,7 @@ rcd_pm_log_LogPM($this, $user, $pmtextid);]]></phpcode>
 			<title>Show link to user PM log</title>
 			<hookname>postbit_display_complete</hookname>
 			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-$template_hook['postbit_user_popup'] .= rcd_pm_log_ShowlinkToUserPMLog();]]></phpcode>
+$template_hook['memberaction_dropdown_items'] .= rcd_pm_log_ShowlinkToUserPMLog($post);]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="1">
 			<title>Log outbound email</title>
