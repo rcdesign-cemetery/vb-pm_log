@@ -118,7 +118,7 @@ $admindm->set('admin_view_pm_log', $vbulletin->GPC['admin_view_pm_log']);]]></ph
 			<title>Cache templates</title>
 			<hookname>cache_templates</hookname>
 			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-rcd_pm_log_CacheTemplates($globaltemplates);]]></phpcode>
+rcd_pm_log_CacheTemplates($cache);]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="5">
 			<title>Check permissions</title>

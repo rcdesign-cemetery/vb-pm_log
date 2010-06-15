@@ -66,17 +66,17 @@ if (!function_exists('can_administer_pm_log'))
 #   Cache templates
 #
 
-function rcd_pm_log_CacheTemplates (&$globaltemplates)
+function rcd_pm_log_CacheTemplates (&$cache)
 {
   global $vbulletin;
 
   if ($vbulletin->options['rcd_pm_log_show_link'])
   {
     if (THIS_SCRIPT == 'showthread')
-      $globaltemplates[] = 'rcd_log_pm_link';
+      $cache[] = 'rcd_log_pm_link';
 
     if (THIS_SCRIPT == 'member')
-      $globaltemplates[] = 'rcd_log_pm_link_memberinfo';
+      $cache[] = 'rcd_log_pm_link_memberinfo';
   }
 }
 
