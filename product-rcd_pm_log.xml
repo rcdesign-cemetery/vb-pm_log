@@ -3,14 +3,14 @@
 <product productid="rcd_pm_log" active="1">
 	<title>Private Messages and Email Log</title>
 	<description>Private Messages and Email Loggind and administering</description>
-	<version>2.3</version>
+	<version>2.4</version>
 	<url><![CDATA[http://www.vbulletin.org/forum/misc.php?do=producthelp&pid=rcd_pm_log]]></url>
 	<versioncheckurl><![CDATA[http://www.vbulletin.org/forum/misc.php?do=productcheck&pid=rcd_pm_log]]></versioncheckurl>
-	<apm_releasedate>1239656400</apm_releasedate>
-	<apm_author>Dmitry Titov, Vitaly Puzrin</apm_author>
-	<apm_relatedurl />
-	<apm_extrainfo />
-	<apm_extraedit />
+	<apm_releasedate></apm_releasedate>
+	<apm_author></apm_author>
+	<apm_relatedurl></apm_relatedurl>
+	<apm_extrainfo></apm_extrainfo>
+	<apm_extraedit></apm_extraedit>
 	<dependencies>
 	</dependencies>
 	<codes>
@@ -86,7 +86,7 @@ $db->show_errors();]]></installcode>
 		</code>
 	</codes>
 	<templates>
-		<template name="rcd_log_pm_link" templatetype="template" date="1236015132" username="Dimit" version=""><![CDATA[<li class="right">
+		<template name="rcd_log_pm_link" templatetype="template" date="1276674728" username="varnak" version="2.3"><![CDATA[<li class="{vb:raw menu_item_position}">
 			<img src="{vb:stylevar imgdir_siteicons}/message.png" alt="" />
 			<a href="{vb:raw private_message_url}" rel='nofollow'>
 				{vb:rawphrase private_messages}
@@ -94,6 +94,10 @@ $db->show_errors();]]></installcode>
 		</li>]]></template>
 		<template name="rcd_log_pm_link_memberinfo" templatetype="template" date="1236014519" username="Dimit" version=""><![CDATA[<div class="block"><a href="{vb:raw private_message_url}" rel="nofollow">{vb:rawphrase private_messages} {vb:raw post_username}</a></div>]]></template>
 	</templates>
+	<stylevardfns>
+	</stylevardfns>
+	<stylevars>
+	</stylevars>
 	<plugins>
 		<plugin active="1" executionorder="5">
 			<title>Add valid field to DM</title>
@@ -192,6 +196,8 @@ rcd_pm_log_UpdateUsername($this, $username, $userid);]]></phpcode>
 		<phrasetype name="vBulletin Settings" fieldname="vbsettings">
 			<phrase name="setting_rcd_pm_log_keep_time_desc" date="1211818317" username="Wildev" version="1.0" />
 			<phrase name="setting_rcd_pm_log_keep_time_title" date="1211818317" username="Wildev" version="1.0"><![CDATA[Logs keeping time (days)]]></phrase>
+			<phrase name="setting_rcd_pm_log_menu_column_left_desc" date="1276674432" username="varnak" version="2.3"><![CDATA[If this one is "Yes", product will place its line in left column of popup's menu. Otherwise right column will be used.]]></phrase>
+			<phrase name="setting_rcd_pm_log_menu_column_left_title" date="1276674432" username="varnak" version="2.3"><![CDATA[Use Left Popup Menu Column]]></phrase>
 			<phrase name="setting_rcd_pm_log_rows_per_page_desc" date="1211894757" username="Wildev" version="1.0" />
 			<phrase name="setting_rcd_pm_log_rows_per_page_title" date="1211894757" username="Wildev" version="1.0"><![CDATA[Rows per page]]></phrase>
 			<phrase name="setting_rcd_pm_log_show_link_desc" date="1231734100" username="Wildev" version="1.3" />
@@ -211,6 +217,11 @@ rcd_pm_log_UpdateUsername($this, $username, $userid);]]></phpcode>
 				<datatype>boolean</datatype>
 				<optioncode>yesno</optioncode>
 				<defaultvalue>0</defaultvalue>
+			</setting>
+			<setting varname="rcd_pm_log_menu_column_left" displayorder="60">
+				<datatype>free</datatype>
+				<optioncode>yesno</optioncode>
+				<defaultvalue>1</defaultvalue>
 			</setting>
 		</settinggroup>
 	</options>

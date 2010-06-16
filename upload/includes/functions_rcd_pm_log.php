@@ -175,10 +175,15 @@ function rcd_pm_log_ShowlinkToUserPMLog ($post)
   if (THIS_SCRIPT == 'showthread'
       AND (can_administer('adminviewpmlog') OR can_administer_pm_log()))
   {
+    global $vbulletin;
+    $item_position = ($vbulletin->options['rcd_pm_log_menu_column_left']) ? 'left': 'right';
+
     $private_message_url = form_private_message_url( $post['userid'] );
+    
     $templater = vB_Template::create('rcd_log_pm_link');
 	$templater->register('private_message_url', $private_message_url);
     $templater->register('post_username', $post['username']);
+    $templater->register('menu_item_position', $item_position);
     $rcd_log_pm_link = $templater->render();
   }
 
