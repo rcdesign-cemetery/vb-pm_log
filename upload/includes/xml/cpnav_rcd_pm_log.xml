@@ -2,7 +2,7 @@
 <navgroups product="vbulletin">
         <navgroup phrase="users" permissions="adminviewpmlog" hr="true" displayorder="110">
 		        <navoption displayorder="150">
-                        <phrase>rcd_pm_log</phrase>
+                        <phrase>rcd_pm_log_acp_menu</phrase>
                         <link>rcd_pm_log.php</link>
                 </navoption>
         </navgroup>

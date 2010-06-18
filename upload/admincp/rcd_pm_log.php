@@ -3,7 +3,7 @@
 || #################################################################### ||
 || # PM Log 2.2                                                       # ||
 || # ---------------------------------------------------------------- # ||
-|| # Copyright © 2009 Dmitry Titov, Vitaly Puzrin.                    # ||
+|| # Copyright Â© 2009 Dmitry Titov, Vitaly Puzrin.                    # ||
 || # All Rights Reserved.                                             # ||
 || # This file may not be redistributed in whole or significant part. # ||
 || #################################################################### ||
@@ -58,7 +58,7 @@ $context_options = array(
   'text' => $vbphrase['text'],
 );
 
-print_cp_header( $vbphrase['rcd_pm_log'] );
+print_cp_header( $vbphrase['rcd_pm_log_acp_menu'] );
 
 // ############## LIST PM MESSAGES ########################################
 if (empty($do) || $do == 'search')
@@ -175,7 +175,7 @@ var vb_disable_ajax = parseInt("0", 10);
       );
   }
 
-  //if (empty($pms)) print_stop_message($vbphrase['empty_folder']);
+  //if (empty($pms)) print_stop_message($vbphrase['rcd_pm_log_empty_folder']);
 
   // check for existing next page
   $next_page_exists = false;
@@ -301,9 +301,9 @@ var vb_disable_ajax = parseInt("0", 10);
 
   // print table headers
   $header = array();
-  $header[] = $vbphrase['dump_from'];
+  $header[] = $vbphrase['rcd_pm_log_dump_from'];
   $header[] = $vbphrase['subject'];
-  $header[] = $vbphrase['dump_to'];
+  $header[] = $vbphrase['rcd_pm_log_dump_to'];
   $header[] = $vbphrase['date'];
 
   print_cells_row($header, true, false, -10);
@@ -333,7 +333,7 @@ var vb_disable_ajax = parseInt("0", 10);
   print_table_header($vbphrase['search'], 2);
 
   print_radio_row(
-      $vbphrase['search_context'],
+      $vbphrase['rcd_pm_log_search_context'],
       'search_context',
       $context_options,
       (($search_context == 'user' OR $search_context == 'text')
@@ -371,36 +371,36 @@ if ($do == 'showpm')
 
   $logid = $vbulletin->GPC['logid'] ? $vbulletin->GPC['logid'] : 0;
 
-  if ( !$logid ) { print_stop_message( $vbphrase['empty_folder'] ); }
+  if ( !$logid ) { print_stop_message( $vbphrase['rcd_pm_log_empty_folder'] ); }
 
   $pm = rcd_pm_log_get_message( $logid );
 
-  if ( empty( $pm ) ) { print_stop_message( $vbphrase['empty_folder'] ); }
+  if ( empty( $pm ) ) { print_stop_message( $vbphrase['rcd_pm_log_empty_folder'] ); }
 
   // print pms list
   print_table_start();
-  print_table_header( $vbphrase['view_message'], 2 );
+  print_table_header( $vbphrase['rcd_pm_log_view_message'], 2 );
 
   // show linked username only for existing users
-  $ipline = $vbphrase['ip'] . ": <a target=\"_blank\" href=\"" . $admincpdir . "/usertools.php?" . $vbulletin->session->vars['sessionurl'] . "do=gethost&ip=" . $pm['fromuserip'] . "\">" . $pm['fromuserip'] . "</a>";
+  $ipline = $vbphrase['rcd_pm_log_ip'] . ": <a target=\"_blank\" href=\"" . $admincpdir . "/usertools.php?" . $vbulletin->session->vars['sessionurl'] . "do=gethost&ip=" . $pm['fromuserip'] . "\">" . $pm['fromuserip'] . "</a>";
   $emailline = $vbphrase['email'] . ": " . $pm['fromuseremail'];
 
   if ( $pm['fromuserid_check'] == $pm['fromuserid'] ) {
-    print_label_row( $vbphrase['dump_from'], "<a target=\"_blank\" href=\"" . $admincpdir . "/user.php?" . $vbulletin->session->vars['sessionurl'] . "do=edit&u=" . $pm['fromuserid'] . "\"><b>" . $pm['fromusername'] . "</b></a> (" . $emailline . ", " . $ipline . ")" );
+    print_label_row( $vbphrase['rcd_pm_log_dump_from'], "<a target=\"_blank\" href=\"" . $admincpdir . "/user.php?" . $vbulletin->session->vars['sessionurl'] . "do=edit&u=" . $pm['fromuserid'] . "\"><b>" . $pm['fromusername'] . "</b></a> (" . $emailline . ", " . $ipline . ")" );
   } else {
-    print_label_row( $vbphrase['dump_from'], "<b>" . $pm['fromusername'] . " (" . $emailline . ", " . $ipline . ")</b>" );
+    print_label_row( $vbphrase['rcd_pm_log_dump_from'], "<b>" . $pm['fromusername'] . " (" . $emailline . ", " . $ipline . ")</b>" );
   }
 
   // show linked username only for existing users
   $emailline = $vbphrase['email'] . ": " . $pm['touseremail'];
   if ( $pm['touserid_check'] == $pm['touserid'] ) {
-    print_label_row( $vbphrase['dump_to'], "<a target=\"_blank\" href=\"" . $admincpdir . "/user.php?" . $vbulletin->session->vars['sessionurl'] . "do=edit&u=" . $pm['touserid'] . "\"><b>" . $pm['tousername'] . "</b></a> (" . $emailline . ")" );
+    print_label_row( $vbphrase['rcd_pm_log_dump_to'], "<a target=\"_blank\" href=\"" . $admincpdir . "/user.php?" . $vbulletin->session->vars['sessionurl'] . "do=edit&u=" . $pm['touserid'] . "\"><b>" . $pm['tousername'] . "</b></a> (" . $emailline . ")" );
   } else {
-    print_label_row( $vbphrase['dump_to'], "<b>" . $pm['tousername'] . " (" . $emailline . ")</b>" );
+    print_label_row( $vbphrase['rcd_pm_log_dump_to'], "<b>" . $pm['tousername'] . " (" . $emailline . ")</b>" );
   }
 
 
-  print_label_row( $vbphrase['sent_date'], vbdate( $vbulletin->options['logdateformat'], $pm['dateline'] ) );
+  print_label_row( $vbphrase['rcd_pm_log_sent_date'], vbdate( $vbulletin->options['logdateformat'], $pm['dateline'] ) );
   print_label_row( $vbphrase['subject'], $pm['title'] );
 
 

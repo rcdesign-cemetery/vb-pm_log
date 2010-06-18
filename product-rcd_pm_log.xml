@@ -3,7 +3,7 @@
 <product productid="rcd_pm_log" active="1">
 	<title>Private Messages and Email Log</title>
 	<description>Private Messages and Email Loggind and administering</description>
-	<version>2.4</version>
+	<version>2.5</version>
 	<url><![CDATA[http://www.vbulletin.org/forum/misc.php?do=producthelp&pid=rcd_pm_log]]></url>
 	<versioncheckurl><![CDATA[http://www.vbulletin.org/forum/misc.php?do=productcheck&pid=rcd_pm_log]]></versioncheckurl>
 	<apm_releasedate></apm_releasedate>
@@ -89,10 +89,10 @@ $db->show_errors();]]></installcode>
 		<template name="rcd_log_pm_link" templatetype="template" date="1276674728" username="varnak" version="2.3"><![CDATA[<li class="{vb:raw menu_item_position}">
 			<img src="{vb:stylevar imgdir_siteicons}/message.png" alt="" />
 			<a href="{vb:raw private_message_url}" rel='nofollow'>
-				{vb:rawphrase private_messages}
+				{vb:rawphrase rcd_pm_log}
 			</a>
 		</li>]]></template>
-		<template name="rcd_log_pm_link_memberinfo" templatetype="template" date="1236014519" username="Dimit" version=""><![CDATA[<div class="block"><a href="{vb:raw private_message_url}" rel="nofollow">{vb:rawphrase private_messages} {vb:raw post_username}</a></div>]]></template>
+		<template name="rcd_log_pm_link_memberinfo" templatetype="template" date="1236014519" username="Dimit" version=""><![CDATA[<div class="block"><a href="{vb:raw private_message_url}" rel="nofollow">{vb:rawphrase rcd_pm_log}</a></div>]]></template>
 	</templates>
 	<stylevardfns>
 	</stylevardfns>
@@ -174,8 +174,8 @@ rcd_pm_log_UpdateUsername($this, $username, $userid);]]></phpcode>
 	</plugins>
 	<phrases>
 		<phrasetype name="Control Panel Global" fieldname="cpglobal">
-			<phrase name="rcd_pm_log" date="1211812410" username="Wildev" version="1.0"><![CDATA[PM Log]]></phrase>
-			<phrase name="search_context" date="1212053355" username="Wildev" version="1.0"><![CDATA[Where]]></phrase>
+			<phrase name="rcd_pm_log_acp_menu" date="1211812410" username="Wildev" version="1.0"><![CDATA[PM Log]]></phrase>
+			<phrase name="rcd_pm_log_search_context" date="1212053355" username="Wildev" version="1.0"><![CDATA[Where]]></phrase>
 		</phrasetype>
 		<phrasetype name="Permissions" fieldname="cppermission">
 			<phrase name="admin_view_pm_log" date="1233936445" username="Wildev" version=""><![CDATA[Can view PM logs]]></phrase>
@@ -186,12 +186,13 @@ rcd_pm_log_UpdateUsername($this, $username, $userid);]]></phpcode>
 			<phrase name="task_rcd_pm_log_clean_cron_title" date="1212168478" username="Wildev" version="1.0"><![CDATA[Clean Log]]></phrase>
 		</phrasetype>
 		<phrasetype name="GLOBAL" fieldname="global">
-			<phrase name="dump_from" date="1236025694" username="Dimit" version=""><![CDATA[From]]></phrase>
-			<phrase name="dump_to" date="1236025733" username="Dimit" version=""><![CDATA[To]]></phrase>
-			<phrase name="empty_folder" date="1236025572" username="Dimit" version=""><![CDATA[Empty Folder]]></phrase>
-			<phrase name="ip" date="1236025625" username="Dimit" version=""><![CDATA[IP]]></phrase>
-			<phrase name="sent_date" date="1236025764" username="Dimit" version=""><![CDATA[Sent Date]]></phrase>
-			<phrase name="view_message" date="1236025862" username="Dimit" version=""><![CDATA[View Message]]></phrase>
+			<phrase name="rcd_pm_log" date="1211812410" username="Wildev" version="1.0"><![CDATA[PM Log]]></phrase>
+			<phrase name="rcd_pm_log_dump_from" date="1236025694" username="Dimit" version=""><![CDATA[From]]></phrase>
+			<phrase name="rcd_pm_log_dump_to" date="1236025733" username="Dimit" version=""><![CDATA[To]]></phrase>
+			<phrase name="rcd_pm_log_empty_folder" date="1236025572" username="Dimit" version=""><![CDATA[Empty Folder]]></phrase>
+			<phrase name="rcd_pm_log_ip" date="1236025625" username="Dimit" version=""><![CDATA[IP]]></phrase>
+			<phrase name="rcd_pm_log_sent_date" date="1236025764" username="Dimit" version=""><![CDATA[Sent Date]]></phrase>
+			<phrase name="rcd_pm_log_view_message" date="1236025862" username="Dimit" version=""><![CDATA[View Message]]></phrase>
 		</phrasetype>
 		<phrasetype name="vBulletin Settings" fieldname="vbsettings">
 			<phrase name="setting_rcd_pm_log_keep_time_desc" date="1211818317" username="Wildev" version="1.0" />
