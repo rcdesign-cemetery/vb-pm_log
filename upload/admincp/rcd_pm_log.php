@@ -552,8 +552,10 @@ function rcd_pm_log_get ($rows, $page, $count = false, $counter = 0)
           if (strlen($vbulletin->GPC['keywords']))
           {
             $username = rcd_pm_get_name_by_uid($vbulletin->GPC['keywords']);
-            $where1 = " PM.`fromusername` = '" . $db->escape_string(htmlspecialchars_uni($username)) . "' ";
-            $where2 = " PM.`tousername`   = '" . $db->escape_string(htmlspecialchars_uni($username)) . "' ";
+//            $where1 = " PM.`fromusername` = '" . $db->escape_string(htmlspecialchars_uni($username)) . "' ";
+//            $where2 = " PM.`tousername`   = '" . $db->escape_string(htmlspecialchars_uni($username)) . "' ";
+            $where1 = " PM.`fromusername` = '" . $db->escape_string($username) . "' ";
+            $where2 = " PM.`tousername`   = '" . $db->escape_string($username) . "' ";
             unset($username);
           }
           /*
