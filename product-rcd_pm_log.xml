@@ -3,14 +3,14 @@
 <product productid="rcd_pm_log" active="1">
 	<title>Private Messages and Email Log</title>
 	<description>Private Messages and Email Loggind and administering</description>
-	<version>2.5</version>
+	<version>3.0</version>
 	<url><![CDATA[http://www.vbulletin.org/forum/misc.php?do=producthelp&pid=rcd_pm_log]]></url>
 	<versioncheckurl><![CDATA[http://www.vbulletin.org/forum/misc.php?do=productcheck&pid=rcd_pm_log]]></versioncheckurl>
-	<apm_releasedate></apm_releasedate>
-	<apm_author></apm_author>
-	<apm_relatedurl></apm_relatedurl>
-	<apm_extrainfo></apm_extrainfo>
-	<apm_extraedit></apm_extraedit>
+	<apm_releasedate>0</apm_releasedate>
+	<apm_author />
+	<apm_relatedurl />
+	<apm_extrainfo />
+	<apm_extraedit />
 	<dependencies>
 	</dependencies>
 	<codes>
@@ -121,61 +121,145 @@ $admindm->set('admin_view_pm_log', $vbulletin->GPC['admin_view_pm_log']);]]></ph
 		<plugin active="1" executionorder="5">
 			<title>Cache templates</title>
 			<hookname>cache_templates</hookname>
-			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-rcd_pm_log_CacheTemplates($cache);]]></phpcode>
+			<phpcode><![CDATA[if ($vbulletin->options['rcd_pm_log_show_link'])
+{
+    if (THIS_SCRIPT == 'showthread')
+    {
+        $cache[] = 'rcd_log_pm_link';
+    }
+
+    if (THIS_SCRIPT == 'member')
+    {
+        $cache[] = 'rcd_log_pm_link_memberinfo';
+    }
+}]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="5">
 			<title>Check permissions</title>
 			<hookname>can_administer</hookname>
-			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-rcd_pm_log_CheckPermissions($do, $admin, $return_value);]]></phpcode>
+			<phpcode><![CDATA[if ($vbulletin->options['rcd_pm_log_show_link'])
+{
+    if (isset($do['adminviewpmlog']))
+    {
+        $return_value = $admin['admin_view_pm_log'] ? true : false;
+    }
+}]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="5">
 			<title>Memberinfo PM Log link</title>
 			<hookname>member_complete</hookname>
-			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-$template_hook['profile_sidebar_first'] .= rcd_pm_log_MemberinfoPMLoglink($userinfo);]]></phpcode>
+			<phpcode><![CDATA[require_once(DIR . '/includes/adminfunctions.php');
+require_once(DIR . '/includes/functions_rcd_pm_log.php');
+if (THIS_SCRIPT == 'member'
+    AND (can_administer('adminviewpmlog') OR can_administer_pm_log()))
+{
+
+
+    $private_message_url = create_private_message_url($userinfo['userid']);
+
+    $templater = vB_Template::create('rcd_log_pm_link_memberinfo');
+    $templater->register('private_message_url', $private_message_url);
+    $template_hook['profile_sidebar_first'] .= $templater->render();
+}]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="5">
-			<title>Show PM using misc.php</title>
+			<title>Show PM using misc.php(hack)</title>
 			<hookname>misc_start</hookname>
-			<phpcode><![CDATA[if ($_REQUEST['do'] == 'showpm')
+			<phpcode><![CDATA[// Don't move to ACP folder. General location needed to parce bbcodes
+if ($_REQUEST['do'] == 'showpm')
 {
-  $admincpdir = $vbulletin->config['Misc']['admincpdir'];
+    $admincpdir = $vbulletin->config['Misc']['admincpdir'];
 
-  include_once(DIR . '/'. $admincpdir . "/rcd_pm_log.php");
-  eval('print_output("", false);');
+    include_once(DIR . '/'. $admincpdir . "/rcd_pm_log.php");
+    eval('print_output("", false);');
 }]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="1">
 			<title>Log PM</title>
 			<hookname>pmdata_postsave_recipient</hookname>
-			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-rcd_pm_log_LogPM($this, $user, $pmtextid);]]></phpcode>
+			<phpcode><![CDATA[if ($this->dbobject->insert_id())
+{
+    $sql = "REPLACE INTO
+                `" . TABLE_PREFIX . "rcd_log_pm`
+            SET
+                `pmid`          =  " . intval($this->dbobject->insert_id()) . ",
+                `pmtextid`      =  " . intval($pmtextid) . ",
+                `fromuserip`    = '" . $this->dbobject->escape_string($this->registry->ipaddress) . "',
+                `fromuserid`    =  " . $this->dbobject->escape_string($this->registry->userinfo['userid']) . ",
+                `fromusername`  = '" . $this->dbobject->escape_string($this->registry->userinfo['username']) . "',
+                `fromuseremail` = '" . $this->dbobject->escape_string($this->registry->userinfo['email']) . "',
+                `touserid`      =  " . $this->dbobject->escape_string($user[userid]) . ",
+                `tousername`    = '" . $this->dbobject->escape_string($user['username']) . "',
+                `touseremail`   = '" . $this->dbobject->escape_string($user['email']) . "',
+                `title`         = '" . $this->dbobject->escape_string($this->pmtext['title']) . "',
+                `message`       = '" . $this->dbobject->escape_string($this->pmtext['message']) . "',
+                `iconid`        =  " . intval($this->pmtext['iconid']) . ",
+                `dateline`      =  " . intval(TIMENOW) . ",
+                `showsignature` =  " . intval($this->pmtext['showsignature']) . ",
+                `allowsmilie`   =  " . intval($this->pmtext['allowsmilie']);
+    $this->dbobject->query_write($sql);
+}]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="5">
 			<title>Show link to user PM log</title>
 			<hookname>postbit_display_complete</hookname>
-			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-$template_hook['memberaction_dropdown_items'] .= rcd_pm_log_ShowlinkToUserPMLog($post);]]></phpcode>
+			<phpcode><![CDATA[if (THIS_SCRIPT == 'showthread')
+{
+    require_once(DIR . '/includes/adminfunctions.php');
+    require_once(DIR . '/includes/functions_rcd_pm_log.php');
+    $rcd_log_pm_link = '';
+    if (can_administer('adminviewpmlog') OR can_administer_pm_log())
+    {
+        global $vbulletin;
+        $item_position = ($vbulletin->options['rcd_pm_log_menu_column_left']) ? 'left' : 'right';
+
+        $private_message_url = create_private_message_url($post['userid']);
+
+        $templater = vB_Template::create('rcd_log_pm_link');
+        $templater->register('private_message_url', $private_message_url);
+        $templater->register('post_username', $post['username']);
+        $templater->register('menu_item_position', $item_position);
+        $template_hook['memberaction_dropdown_items'] .= $templater->render();
+    }
+}]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="1">
 			<title>Log outbound email</title>
 			<hookname>sendmessage_domailmember</hookname>
-			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-rcd_pm_log_LogOutboundEmail($userinfo);]]></phpcode>
+			<phpcode><![CDATA[$sql = "REPLACE INTO
+          `" . TABLE_PREFIX . "rcd_log_pm`
+        SET
+          `fromuserip`    = '" . $db->escape_string($vbulletin->ipaddress) . "',
+          `fromuserid`    =  " . $db->escape_string($vbulletin->userinfo['userid']) . ",
+          `fromusername`  = '" . $db->escape_string($vbulletin->userinfo['username']) . "',
+          `fromuseremail` = '" . $db->escape_string($vbulletin->userinfo['email']) . "',
+          `touserid`      =  " . $db->escape_string($userinfo['userid']) . ",
+          `tousername`    = '" . $db->escape_string($userinfo['username']) . "',
+          `touseremail`   = '" . $db->escape_string($userinfo['email']) . "',
+          `title`         = '" . "mail: " . $db->escape_string(fetch_censored_text($vbulletin->GPC['emailsubject'])) . "',
+        `message`       = '" . $db->escape_string(fetch_censored_text($vbulletin->GPC['message'])) . "',
+        `dateline`      =  " . intval(TIMENOW);
+$db->query_write($sql);]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="5">
 			<title>Update username</title>
 			<hookname>userdata_update_username</hookname>
-			<phpcode><![CDATA[require_once(DIR . '/includes/functions_rcd_pm_log.php');
-rcd_pm_log_UpdateUsername($this, $username, $userid);]]></phpcode>
+			<phpcode><![CDATA[// pm log recepient 'tousername'
+$this->dbobject->query_write("
+    UPDATE `" . TABLE_PREFIX . "rcd_log_pm` SET
+    `tousername` = '" . $this->dbobject->escape_string($username) . "'
+    WHERE `touserid` = $userid");
+
+// pm log sender 'fromusername'
+$this->dbobject->query_write("
+    UPDATE `" . TABLE_PREFIX . "rcd_log_pm` SET
+    `fromusername` = '" . $this->dbobject->escape_string($username) . "'
+    WHERE `fromuserid` = $userid");]]></phpcode>
 		</plugin>
 	</plugins>
 	<phrases>
 		<phrasetype name="Control Panel Global" fieldname="cpglobal">
 			<phrase name="rcd_pm_log_acp_menu" date="1211812410" username="Wildev" version="1.0"><![CDATA[PM Log]]></phrase>
-			<phrase name="rcd_pm_log_search_context" date="1212053355" username="Wildev" version="1.0"><![CDATA[Where]]></phrase>
 		</phrasetype>
 		<phrasetype name="Permissions" fieldname="cppermission">
 			<phrase name="admin_view_pm_log" date="1233936445" username="Wildev" version=""><![CDATA[Can view PM logs]]></phrase>
@@ -189,8 +273,8 @@ rcd_pm_log_UpdateUsername($this, $username, $userid);]]></phpcode>
 			<phrase name="rcd_pm_log" date="1211812410" username="Wildev" version="1.0"><![CDATA[PM Log]]></phrase>
 			<phrase name="rcd_pm_log_dump_from" date="1236025694" username="Dimit" version=""><![CDATA[From]]></phrase>
 			<phrase name="rcd_pm_log_dump_to" date="1236025733" username="Dimit" version=""><![CDATA[To]]></phrase>
-			<phrase name="rcd_pm_log_empty_folder" date="1236025572" username="Dimit" version=""><![CDATA[Empty Folder]]></phrase>
 			<phrase name="rcd_pm_log_ip" date="1236025625" username="Dimit" version=""><![CDATA[IP]]></phrase>
+			<phrase name="rcd_pm_log_not_found" date="1287668463" username="varnak" version=""><![CDATA[Nothing found]]></phrase>
 			<phrase name="rcd_pm_log_sent_date" date="1236025764" username="Dimit" version=""><![CDATA[Sent Date]]></phrase>
 			<phrase name="rcd_pm_log_view_message" date="1236025862" username="Dimit" version=""><![CDATA[View Message]]></phrase>
 		</phrasetype>

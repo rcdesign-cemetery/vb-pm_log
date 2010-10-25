@@ -1,7 +1,7 @@
 <?php
 /*======================================================================*\
 || #################################################################### ||
-|| # PM Log 2.2                                                       # ||
+|| # PM Log 3.0                                                       # ||
 || # ---------------------------------------------------------------- # ||
 || # Copyright © 2009 Dmitry Titov, Vitaly Puzrin.                    # ||
 || # All Rights Reserved.                                             # ||
@@ -15,831 +15,566 @@ error_reporting(E_ALL & ~E_NOTICE);
 
 // #################### DEFINE IMPORTANT CONSTANTS #######################
 if (!defined('THIS_SCRIPT'))
-  define('THIS_SCRIPT', 'rcd_pm_log');
+    define('THIS_SCRIPT', 'rcd_pm_log');
+
+define('MOVE_FIRST', 10);
+define('MOVE_LAST', 20);
+define('MOVE_PREV', 30);
+define('MOVE_NEXT', 40);
 
 // ############## PRE-CACHE TEMPLATES AND DATA ############################
 $phrasegroups = array(
-  'style',
-  'pm',
-  'user',
-  'fronthelp',
-  'attachment_image',
-  'posting',
+    'style',
+    'pm',
+    'user',
+    'fronthelp',
+    'attachment_image',
+    'posting',
 );
 
 $actiontemplates = array();
+
 
 // ############## REQUIRE BACK-END ########################################
 require_once('./global.php');
 require_once(DIR . '/includes/adminfunctions.php');
 require_once(DIR . '/includes/adminfunctions_template.php');
-require_once(DIR . '/includes/class_bbcode.php');
 
 // ######################## CHECK ADMIN PERMISSIONS #######################
 if (!(can_administer('adminviewpmlog') OR can_administer_pm_log()))
 {
-  print_cp_no_permission();
+    print_cp_no_permission();
 }
 
 // ############## START MAIN SCRIPT #######################################
-$action = $_GET['do'];
-$do = $_REQUEST['do'];
-$id = $_GET['id'];
-
-$this_script = 'rcd_pm_log';
-$rcd_pm_log_ver = 2.1;
 
 $usermenus = array();
 
-// ############## SEARCH PARAMETERS #######################################
-
-$context_options = array(
-  'user' => $vbphrase['user'],
-  'text' => $vbphrase['text'],
-);
-
-print_cp_header( $vbphrase['rcd_pm_log_acp_menu'] );
-
 // ############## LIST PM MESSAGES ########################################
-if (empty($do) || $do == 'search')
+if (empty($_REQUEST['do']))
 {
+    $_REQUEST['do'] = 'search';
+}
+if ($_REQUEST['do'] == 'search')
+{
+    print_cp_header($vbphrase['rcd_pm_log_acp_menu']);
+
 ?>
 
-<style type="text/css" id="vbulletin_css">
-.tborder
-{
-	background: #D1D1E1;
-	color: #000000;
-	border: 1px solid #0B198C;
-}
-.vbmenu_popup
-{
-	background: #FFFFFF;
-	color: #000000;
-	border: 1px solid #0B198C;
-}
-.vbmenu_option
-{
-	background: #BBC7CE;
-	color: #000000;
-	font: 11px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
-	white-space: nowrap;
-	cursor: pointer;
-}
-.vbmenu_option a:link, .vbmenu_option_alink
-{
-	color: #22229C;
-	text-decoration: none;
-}
-.vbmenu_option a:visited, .vbmenu_option_avisited
-{
-	color: #22229C;
-	text-decoration: none;
-}
-.vbmenu_option a:hover, .vbmenu_option a:active, .vbmenu_option_ahover
-{
-	color: #FFFFFF;
-	text-decoration: none;
-}
-</style>
+    <style type="text/css" id="vbulletin_css">
+        .tborder
+        {
+            background: #D1D1E1;
+            color: #000000;
+            border: 1px solid #0B198C;
+        }
+        .vbmenu_popup
+        {
+            background: #FFFFFF;
+            color: #000000;
+            border: 1px solid #0B198C;
+        }
+        .vbmenu_option
+        {
+            background: #BBC7CE;
+            color: #000000;
+            font: 11px verdana, geneva, lucida, 'lucida grande', arial, helvetica, sans-serif;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .vbmenu_option a:link, .vbmenu_option_alink
+        {
+            color: #22229C;
+            text-decoration: none;
+        }
+        .vbmenu_option a:visited, .vbmenu_option_avisited
+        {
+            color: #22229C;
+            text-decoration: none;
+        }
+        .vbmenu_option a:hover, .vbmenu_option a:active, .vbmenu_option_ahover
+        {
+            color: #FFFFFF;
+            text-decoration: none;
+        }
+    </style>
 
-<script type="text/javascript">
-<!--
-var SESSIONURL = "<?php echo $vbulletin->session->vars['sessionurl'] ?>";
-var SECURITYTOKEN = "<?php echo $vbulletin->userinfo['securitytoken'] ?>";
-var IMGDIR_MISC = "<?php echo $vbulletin->options['bburl'] ?>/images/misc";
-var vb_disable_ajax = parseInt("0", 10);
-// -->
-</script>
-<script type="text/javascript" src="<?php echo $vbulletin->options['bburl'] ?>/clientscript/vbulletin_menu.js"></script>
-<script type="text/javascript" src="<?php echo $vbulletin->options['bburl'] ?>/clientscript/vbulletin_ajax_namesugg.js"></script>
+    <script type="text/javascript">
+        <!--
+        var SESSIONURL = "<?php echo $vbulletin->session->vars['sessionurl'] ?>";
+        var SECURITYTOKEN = "<?php echo $vbulletin->userinfo['securitytoken'] ?>";
+        var IMGDIR_MISC = "<?php echo $vbulletin->options['bburl'] ?>/images/misc";
+        var vb_disable_ajax = parseInt("0", 10);
+        // -->
+    </script>
+    <script type="text/javascript" src="<?php echo $vbulletin->options['bburl'] ?>/clientscript/vbulletin_menu.js"></script>
+    <script type="text/javascript" src="<?php echo $vbulletin->options['bburl'] ?>/clientscript/vbulletin_ajax_namesugg.js"></script>
 
 <?php
+    $vbulletin->input->clean_array_gpc('r', array(
+        'firstlogid' => TYPE_INT,
+        'startlogid' => TYPE_INT,
+        'endlogid' => TYPE_INT,
+        'username' => TYPE_STR,
+        'userid' => TYPE_STR,
+        'keywords' => TYPE_STR,
+        'move' => TYPE_INT,
+        'page_num' => TYPE_INT,
+        'toral_count' => TYPE_INT,
+    ));
 
-  $vbulletin->input->clean_array_gpc('r', array(
-    'perpage'        => TYPE_INT,
-    'pagenumber'     => TYPE_INT,
-    'nextlimit'      => TYPE_INT,
-    'prevlimit'      => TYPE_INT,
-    'search_context' => TYPE_STR,
-    'keywords'       => TYPE_STR,
-    'page'           => TYPE_STR,
-  ));
-
-  if (!in_array($vbulletin->GPC['page'], array('next', 'prev', 'first', 'last')))
-    $vbulletin->GPC['page'] = 'first';
-
-  if ($vbulletin->GPC['perpage'] < 1)
-    $vbulletin->GPC['perpage'] = $vbulletin->options['rcd_pm_log_rows_per_page'];
-
-  if ($vbulletin->GPC['pagenumber'] < 1)
-    $vbulletin->GPC['pagenumber'] = 1;
-
-  $search_context  = $vbulletin->GPC['search_context'];
-  $search_keywords = $vbulletin->GPC['keywords'];
-
-  if ($vbulletin->GPC['search_context'] == 'userid')
-  {
-    $search_context  = 'user';
-    $search_keywords = rcd_pm_get_name_by_uid($search_keywords);
-  }
-
-
-  $counter = null;
-
-  if ($vbulletin->GPC['search_context'] != 'text')
-  {
-    $counter = rcd_pm_log_get(
-      $vbulletin->GPC['perpage'],
-      $vbulletin->GPC['pagenumber'],
-      true
-    );
-
-    $totalpages = ceil($counter / $vbulletin->GPC['perpage']);
-
-    $pms = $counter
-      ? rcd_pm_log_get(
-          $vbulletin->GPC['perpage'],
-          $vbulletin->GPC['pagenumber'],
-          false,
-          $counter
-        )
-      : array();
-  }
-  else
-  {
-    $pms =
-      rcd_pm_log_get(
-        $vbulletin->GPC['perpage'],
-        $vbulletin->GPC['pagenumber']
-      );
-  }
-
-  //if (empty($pms)) print_stop_message($vbphrase['rcd_pm_log_empty_folder']);
-
-  // check for existing next page
-  $next_page_exists = false;
-  $next_page_limit  = 0;
-  $prev_page_limit  = 0;
-
-  if (!empty($pms) && $pms[count($pms) -1 ]['markid'] > 0)
-  {
-    $next_page_exists = true;
-    array_pop($pms);
-  }
-
-  $next_page_limit = $pms[count($pms) -1 ]['logid'];
-  $prev_page_limit = $pms[0]['logid'];
-
-  if ($vbulletin->GPC['search_context'])
-  {
-    if ($counter === null || $counter > $vbulletin->GPC['perpage'])
+    if (!$vbulletin->GPC_exists['move'] OR 0 == $vbulletin->GPC['move'])
     {
-      if (   ($vbulletin->GPC['page'] == 'prev' && $next_page_exists)
-          || (in_array($vbulletin->GPC['page'], array('next', 'last'))))
-      {
-        $firstpage =
-            '<input type="submit" class="button" value="&laquo; ' . $vbphrase['first_page'] . '" '
-          . 'tabindex="1" onclick="'
-          . 'document.forms[\'paging_helper\'].page.value = \'first\';'
-          . '" />';
-
-        $prevpage =
-            '<input type="submit" class="button" value="&laquo; ' . $vbphrase['prev_page'] . '" '
-          . 'tabindex="1" onclick="'
-          . 'document.forms[\'paging_helper\'].page.value = \'prev\';'
-          . '" />';
-      }
-
-      if (   ($vbulletin->GPC['page'] == ''     && $next_page_exists)
-          || ($vbulletin->GPC['page'] == 'next' && $next_page_exists)
-          || (in_array($vbulletin->GPC['page'], array('prev', 'first'))))
-      {
-        $nextpage =
-            '<input type="submit" class="button" value="' . $vbphrase['next_page'] . ' &raquo;" '
-          . 'tabindex="1" onclick="'
-          . 'document.forms[\'paging_helper\'].page.value = \'next\';'
-          . '" />';
-
-        $lastpage =
-            '<input type="submit" class="button" value="' . $vbphrase['last_page'] . ' &raquo;" '
-          . 'tabindex="1" onclick="'
-          . 'document.forms[\'paging_helper\'].page.value = \'last\';'
-          . '" />';
-      }
+        $vbulletin->GPC['move'] = MOVE_NEXT;
     }
-  }
-  else
-  {
-    if ($counter && $vbulletin->GPC['pagenumber'] != 1)
+    $move = $vbulletin->GPC['move'];
+
+    if ($vbulletin->GPC_exists['startlogid'] OR 0 < $vbulletin->GPC['startlogid'])
     {
-      $prv = $vbulletin->GPC['pagenumber'] - 1;
-
-      $firstpage =
-          '<input type="submit" class="button" value="&laquo; ' . $vbphrase['first_page'] . '" '
-        . 'tabindex="1" onclick="'
-        . 'document.forms[\'paging_helper\'].pagenumber.value = \'1\';'
-        . '" />';
-
-      $prevpage =
-          '<input type="submit" class="button" value="&laquo; ' . $vbphrase['prev_page'] . '" '
-        . 'tabindex="1" onclick="'
-        . 'document.forms[\'paging_helper\'].pagenumber.value = \'' . $prv . '\';'
-        . '" />';
+        $startlogid = $vbulletin->GPC['startlogid'];
     }
 
-    if ($counter && $vbulletin->GPC['pagenumber'] != $totalpages)
+    if ($vbulletin->GPC_exists['endlogid'] OR 0 < $vbulletin->GPC['endlogid'])
     {
-      $nxt = $vbulletin->GPC['pagenumber'] + 1;
-
-      $nextpage =
-          '<input type="submit" class="button" value="' . $vbphrase['next_page'] . ' &raquo;" '
-        . 'tabindex="1" onclick="'
-        . 'document.forms[\'paging_helper\'].pagenumber.value = \'' . $nxt . '\';'
-        . '" />';
-
-      $lastpage =
-          '<input type="submit" class="button" value="' . $vbphrase['last_page'] . ' &raquo;" '
-        . 'tabindex="1" onclick="'
-        . 'document.forms[\'paging_helper\'].pagenumber.value = \'' . $totalpages . '\';'
-        . '" />';
+        $endlogid = $vbulletin->GPC['endlogid'];
     }
-  }
 
-  // paging helper form
-  // print pms list
-  print_form_header( 'rcd_pm_log', 'search', false, true, 'paging_helper' );
+    if ($vbulletin->GPC['perpage'] < 1)
+    {
+        $vbulletin->GPC['perpage'] = $vbulletin->options['rcd_pm_log_rows_per_page'];
+    }
+    $perpage = $vbulletin->GPC['perpage'];
 
-  construct_hidden_code( "pagenumber"     , $vbulletin->GPC['pagenumber'] );
-  construct_hidden_code( "perpage"        , $vbulletin->GPC['perpage']    );
-  construct_hidden_code( "page"           , $vbulletin->GPC['page']       );
-  construct_hidden_code( "nextlimit"      , $next_page_limit              );
-  construct_hidden_code( "prevlimit"      , $prev_page_limit              );
+    $search_keywords = trim($vbulletin->GPC['keywords']);
 
-  if (strlen($search_context))
-  {
-    construct_hidden_code( "search_context" , $search_context               );
-    construct_hidden_code( "keywords"       , $search_keywords, false       );
-  }
+    if ($vbulletin->GPC_exists['userid'])
+    {
+        $userinfo = verify_id('user', $vbulletin->GPC['userid'], false, true);
+        if (!$userinfo)
+        {
+            print_stop_message('invalidid', $vbphrase["$idname"], $vbulletin->options['contactuslink']);
+        }
+        $vbulletin->GPC['username'] = $userinfo['username'];
+    }
 
-  $from_num =
-    $counter
-    ? (($vbulletin->GPC['pagenumber'] - 1) * $vbulletin->GPC['perpage'] + 1)
-    : 0;
+    if ($vbulletin->GPC['username'])
+    {
+        $user_name = $vbulletin->GPC['username'];
+    }
 
-  $to_num   =
-    ($vbulletin->GPC['pagenumber'] - 1) * $vbulletin->GPC['perpage']
-    + $vbulletin->GPC['perpage'];
+    if (!$vbulletin->GPC['total_count'])
+    {
+        $vbulletin->GPC['total_count'] = rcd_pm_get_count_total_count($user_name, $search_keywords);
+    }
 
-  if ($counter !== null && $to_num > $counter) $to_num = $counter;
+    $total_count = $vbulletin->GPC['total_count'];
+    if ((!$endlogid AND MOVE_LAST == $move) OR
+        (!$startlogid AND MOVE_PREV == $move) OR
+        (!$startlogid AND MOVE_FIRST == $move))
+    {
+        print_stop_message('rcd_pm_log_not_found');
+    }
 
-  $tablename =
-    $vbphrase['private_messages']
-    . ($counter !== null ? " (" . $from_num . "-" . $to_num . "/" . $counter . ")" : "");
+    $sql_draft = 'SELECT
+                        pm.logid, pm.fromuserid, pm.fromusername, pm.touserid, pm.tousername, pm.title, pm.dateline
+                    FROM
+                        ' . TABLE_PREFIX . 'rcd_log_pm AS pm';
 
-  print_table_header($tablename, 4);
+    $order = 'ASC';
 
-  // print table headers
-  $header = array();
-  $header[] = $vbphrase['rcd_pm_log_dump_from'];
-  $header[] = $vbphrase['subject'];
-  $header[] = $vbphrase['rcd_pm_log_dump_to'];
-  $header[] = $vbphrase['date'];
+    $limit = ($perpage + 1);
+    switch ($move)
+    {
+        case MOVE_LAST:
+            $order = 'DESC';
+            $limit = (int) fmod($total_count, $perpage);
+            if (0 == $limit)
+            {
+                $limit = $perpage;
+            }
+            $vbulletin->GPC['page_num'] = ceil($total_count / $perpage);
+            break;
+        case MOVE_NEXT:
+            if ($endlogid)
+            {
+                $conditions[] = 'pm.logid >= ' . $endlogid;
+            }
+            $vbulletin->GPC['page_num']++;
+            break;
+        case MOVE_PREV:
+            $order = 'DESC';
+            $conditions[] = 'pm.logid <' . $startlogid;
+            $vbulletin->GPC['page_num']--;
+            break;
+        case MOVE_FIRST:
+        default:
+            $vbulletin->GPC['page_num'] = 1;
+    }
 
-  print_cells_row($header, true, false, -10);
+    if (!empty($search_keywords))
+    {
+        $conditions[] = rcd_pm_get_kewords_condition($search_keywords);
+    }
+    $order = ' ORDER BY logid ' . $order;
+    $limit = ' LIMIT ' . $limit;
 
-  // print contents rows
-  foreach ($pms AS $pm)
-  {
-    $row = array();
+    if (!empty($user_name))
+    {
+        $sql_draft .= ' WHERE ';
+        $sql = '(' . $sql_draft .
+            ' fromusername = \'' . $user_name . '\' ' .
+            (!empty($conditions) ? ' AND ' . implode(' AND ', $conditions) : '') .
+            $order . $limit .
+            ') UNION (' .
+            $sql_draft . ' tousername = \'' . $user_name . '\' ' .
+            (!empty($conditions) ? ' AND ' . implode(' AND ', $conditions) : '') .
+            $order . $limit . ')';
+    }
+    else
+    {
+        $sql = $sql_draft;
+        if (!empty($conditions))
+        {
+            $sql .= ' WHERE ' . implode(' AND ', $conditions);
+        }
+        $sql .= $order . $limit;
+    }
 
-    $row[] = user_name_cell($pm, 'from');
-    $row[] = "<a target=\"_blank\" href=\""
-             . $vbulletin->options['bburl'] . "/misc.php?"
-             . $vbulletin->session->vars['sessionurl']
-             . "do=showpm&logid=" . $pm['logid'] . "\">"
-             . $pm['title'] . "</a>";
-    $row[] = user_name_cell($pm, 'to');
-    $row[] = vbdate($vbulletin->options['logdateformat'], $pm['dateline']);
+    $res = $db->query_read($sql);
 
-    print_cells_row($row, false, false, -10);
-  }
+    $results = array();
+    while ($row = $db->fetch_array($res))
+    {
+        $results[$row['logid']] = $row;
+    }
+    if (!count($results))
+    {
+        print_stop_message('rcd_pm_log_not_found');
+    }
 
-  print_table_footer(4, "$firstpage $prevpage &nbsp; $nextpage $lastpage");
+    ksort($results);
+    $results = array_slice($results, 0, $perpage + 1);
+
+    if (count($results) > $perpage)
+    {
+        $last_row = array_pop($results);
+        $endlogid = $last_row['logid'];
+        $nextpage = rcd_pm_construct_button(MOVE_NEXT);
+        $lastpage = rcd_pm_construct_button(MOVE_LAST);
+    }
+
+    $startlogid = $results[0]['logid'];
+    if (empty($vbulletin->GPC['firstlogid']))
+    {
+        $vbulletin->GPC['firstlogid'] = $startlogid;
+    }
+    if ($vbulletin->GPC['firstlogid'] < $startlogid)
+    {
+        $firstpage = rcd_pm_construct_button(MOVE_FIRST);
+        $prevpage = rcd_pm_construct_button(MOVE_PREV);
+    }
+
+    print_form_header('rcd_pm_log', 'search', false, true, 'paging_helper');
+
+    construct_hidden_code("page_num", $vbulletin->GPC['page_num']);
+    construct_hidden_code("move", '');
+
+    construct_hidden_code('firstlogid', $vbulletin->GPC['firstlogid']);
+    if (isset($startlogid))
+    {
+        construct_hidden_code('startlogid', $startlogid);
+    }
+    if (isset($endlogid))
+    {
+        construct_hidden_code('endlogid', $endlogid);
+    }
+    if (isset($user_name))
+    {
+        construct_hidden_code('username', $user_name);
+    }
+    construct_hidden_code('total_count', $total_count);
+
+    if (strlen($search_keywords))
+    {
+        construct_hidden_code("keywords", $search_keywords);
+    }
+
+    $from_num = ($vbulletin->GPC['page_num'] - 1) * $perpage + 1;
+
+    $to_num = ($vbulletin->GPC['page_num'] - 1) * $perpage + $perpage;
+
+    if ($counter !== null && $to_num > $counter)
+        $to_num = $counter;
+
+    $tablename =
+        $vbphrase['private_messages']
+        . ' (' . $from_num . '-' . ($to_num < $total_count ? $to_num : $total_count) . '/' . $total_count . ')';
+
+    print_table_header($tablename, 4);
+
+    // print table headers
+    $header = array();
+    $header[] = $vbphrase['rcd_pm_log_dump_from'];
+    $header[] = $vbphrase['subject'];
+    $header[] = $vbphrase['rcd_pm_log_dump_to'];
+    $header[] = $vbphrase['date'];
+
+    print_cells_row($header, true, false, -10);
+
+    // print contents rows
+    foreach ($results AS $pm)
+    {
+        $row = array();
+
+        $row[] = user_name_cell($pm['fromusername'], $pm['fromuserid']);
+        $row[] = "<a target=\"_blank\" href=\""
+            . $vbulletin->options['bburl'] . "/misc.php?"
+            . $vbulletin->session->vars['sessionurl']
+            . "do=showpm&logid=" . $pm['logid'] . "\" >"
+            . $pm['title'] . "</a>";
+        $row[] = user_name_cell($pm['tousername'], $pm['touserid']);
+        $row[] = vbdate($vbulletin->options['logdateformat'], $pm['dateline']);
+
+        print_cells_row($row, false, false, -10);
+    }
+
+    print_table_footer(4, "$firstpage $prevpage &nbsp; $nextpage $lastpage");
 
 
-  // now print search form
-  print_form_header('rcd_pm_log', 'search');
-  print_table_header($vbphrase['search'], 2);
+// now print search form
+    print_form_header('rcd_pm_log', 'search');
+    print_table_header($vbphrase['search'], 2);
 
-  print_radio_row(
-      $vbphrase['rcd_pm_log_search_context'],
-      'search_context',
-      $context_options,
-      (($search_context == 'user' OR $search_context == 'text')
-        ? $search_context
-        : 'text'
-      ),
-      'smallfont'
-    );
+    print_input_row($vbphrase['username'], 'username', $user_name, false);
+    print_input_row($vbphrase['keywords'], 'keywords', $search_keywords, false);
 
+    print_submit_row($vbphrase['search'], '', 2);
 
-  print_input_row($vbphrase['keywords'], 'keywords', $search_keywords, false);
-
-  print_submit_row($vbphrase['search'], '', 2);
-
-  foreach ($usermenus AS $menu) { echo $menu; }
+    foreach ($usermenus AS $menu)
+    {
+        echo $menu;
+    }
 ?>
 
-  <script type="text/javascript">
-  <!--
-    // Main vBulletin Javascript Initialization
-    vBulletin_init();
-  //-->
-  </script>
+    <script type="text/javascript">
+        <!--
+        // Main vBulletin Javascript Initialization
+        vBulletin_init();
+        //-->
+    </script>
 
 <?php
-
 }
 
 // ############## PRINT MESSAGE ###########################################
-if ($do == 'showpm')
+if ($_REQUEST['do'] == 'showpm')
 {
-  $vbulletin->input->clean_array_gpc( 'r', array(
-    'logid' => TYPE_UINT,
-  ) );
+    if ($vbulletin->options['storecssasfile'])
+    {
+        $vbcsspath = 'clientscript/vbulletin_css/style' . str_pad($style['styleid'], 5, '0', STR_PAD_LEFT) . $vbulletin->stylevars['textdirection']['string'][0] . '/';
+        $head_insert = '<link rel="stylesheet" type="text/css" href="' . $vbcsspath . 'bbcode.css' . '?d=\' . $style[\'dateline\'] . \'" />';
+    }
+    else
+    {
+        // textdirection var added to prevent cache if admin modified language text_direction. See bug #32640
+        $vbcsspath = 'css.php?styleid=' . $style['styleid'] . '&amp;langid=' . LANGUAGEID . '&amp;d=' . $style['dateline'] . '&amp;td=' . $vbulletin->stylevars['textdirection']['string'] . '&amp;sheet=';
+        $head_insert = '<link rel="stylesheet" type="text/css" href="' . $vbcsspath . 'bbcode.css" />';
+    }
 
-  $logid = $vbulletin->GPC['logid'] ? $vbulletin->GPC['logid'] : 0;
+    print_cp_header($vbphrase['rcd_pm_log_acp_menu'], '', $head_insert);
 
-  if ( !$logid ) { print_stop_message( $vbphrase['rcd_pm_log_empty_folder'] ); }
-
-  $pm = rcd_pm_log_get_message( $logid );
-
-  if ( empty( $pm ) ) { print_stop_message( $vbphrase['rcd_pm_log_empty_folder'] ); }
-
-  // print pms list
-  print_table_start();
-  print_table_header( $vbphrase['rcd_pm_log_view_message'], 2 );
-
-  // show linked username only for existing users
-  $ipline = $vbphrase['rcd_pm_log_ip'] . ": <a target=\"_blank\" href=\"" . $admincpdir . "/usertools.php?" . $vbulletin->session->vars['sessionurl'] . "do=gethost&ip=" . $pm['fromuserip'] . "\">" . $pm['fromuserip'] . "</a>";
-  $emailline = $vbphrase['email'] . ": " . $pm['fromuseremail'];
-
-  if ( $pm['fromuserid_check'] == $pm['fromuserid'] ) {
-    print_label_row( $vbphrase['rcd_pm_log_dump_from'], "<a target=\"_blank\" href=\"" . $admincpdir . "/user.php?" . $vbulletin->session->vars['sessionurl'] . "do=edit&u=" . $pm['fromuserid'] . "\"><b>" . $pm['fromusername'] . "</b></a> (" . $emailline . ", " . $ipline . ")" );
-  } else {
-    print_label_row( $vbphrase['rcd_pm_log_dump_from'], "<b>" . $pm['fromusername'] . " (" . $emailline . ", " . $ipline . ")</b>" );
-  }
-
-  // show linked username only for existing users
-  $emailline = $vbphrase['email'] . ": " . $pm['touseremail'];
-  if ( $pm['touserid_check'] == $pm['touserid'] ) {
-    print_label_row( $vbphrase['rcd_pm_log_dump_to'], "<a target=\"_blank\" href=\"" . $admincpdir . "/user.php?" . $vbulletin->session->vars['sessionurl'] . "do=edit&u=" . $pm['touserid'] . "\"><b>" . $pm['tousername'] . "</b></a> (" . $emailline . ")" );
-  } else {
-    print_label_row( $vbphrase['rcd_pm_log_dump_to'], "<b>" . $pm['tousername'] . " (" . $emailline . ")</b>" );
-  }
+    // Hack. Fix for hardcoded paths in "print_cp_header" functions. Just remove ../ , because we are in upper folder
+    $content = ob_get_clean();
+    ob_start();
+    echo str_replace('"../', '"', $content);
 
 
-  print_label_row( $vbphrase['rcd_pm_log_sent_date'], vbdate( $vbulletin->options['logdateformat'], $pm['dateline'] ) );
-  print_label_row( $vbphrase['subject'], $pm['title'] );
+    $vbulletin->input->clean_array_gpc('r', array(
+        'logid' => TYPE_UINT,
+    ));
+
+    $logid = $vbulletin->GPC['logid'] ? $vbulletin->GPC['logid'] : 0;
+
+    if (!$logid)
+    {
+        print_stop_message('rcd_pm_log_not_found');
+    }
+
+    $sql = 'SELECT
+                pm.*
+            FROM
+                ' . TABLE_PREFIX . 'rcd_log_pm AS pm
+            WHERE
+                pm.`logid` = ' . $logid . '
+            LIMIT 1';
+
+    $pm = $db->query_first($sql);
+    if (empty($pm))
+    {
+        print_stop_message('rcd_pm_log_not_found');
+    }
 
 
-  $bbcode_parser =& new vB_BbCodeParser($vbulletin, fetch_tag_list());
+    // print pms list
+    print_table_start();
+    print_table_header($vbphrase['rcd_pm_log_view_message'], 2);
 
-  // force to not allow html and images
-  $vbulletin->options['privallowhtml']        = false;
-  $vbulletin->options['privallowbbimagecode'] = false;
+    // show linked username only for existing users
+    $ipline = $vbphrase['rcd_pm_log_ip'] . ": <a target=\"_blank\" href=\"" . $admincpdir . "/usertools.php?" . $vbulletin->session->vars['sessionurl'] . "do=gethost&ip=" . $pm['fromuserip'] . "\">" . $pm['fromuserip'] . "</a>";
+    $emailline = $vbphrase['email'] . ": " . $pm['fromuseremail'];
 
-  print_description_row(html_entity_decode($bbcode_parser->parse($pm['message'], 'privatemessage')), false, 2);
+    if (verify_id('user', $pm['fromuserid'], false))
+    {
+        print_label_row($vbphrase['rcd_pm_log_dump_from'], "<a target=\"_blank\" href=\"" . $admincpdir . "/user.php?" . $vbulletin->session->vars['sessionurl'] . "do=edit&u=" . $pm['fromuserid'] . "\"><b>" . $pm['fromusername'] . "</b></a> (" . $emailline . ", " . $ipline . ")");
+    }
+    else
+    {
+        print_label_row($vbphrase['rcd_pm_log_dump_from'], "<b>" . $pm['fromusername'] . " (" . $emailline . ", " . $ipline . ")</b>");
+    }
 
-/*
-  print_description_row( $pm['message'], true, 2 );
-*/
+    // show linked username only for existing users
+    $emailline = $vbphrase['email'] . ": " . $pm['touseremail'];
+    if (verify_id('user', $pm['touserid'], false))
+    {
+        print_label_row($vbphrase['rcd_pm_log_dump_to'], "<a target=\"_blank\" href=\"" . $admincpdir . "/user.php?" . $vbulletin->session->vars['sessionurl'] . "do=edit&u=" . $pm['touserid'] . "\"><b>" . $pm['tousername'] . "</b></a> (" . $emailline . ")");
+    }
+    else
+    {
+        print_label_row($vbphrase['rcd_pm_log_dump_to'], "<b>" . $pm['tousername'] . " (" . $emailline . ")</b>");
+    }
 
-  print_table_footer( 2 );
+
+    print_label_row($vbphrase['rcd_pm_log_sent_date'], vbdate($vbulletin->options['logdateformat'], $pm['dateline']));
+    print_label_row($vbphrase['subject'], $pm['title']);
+
+    require_once(DIR . '/includes/class_bbcode.php');
+    $bbcode_parser = new vB_BbCodeParser($vbulletin, fetch_tag_list());
+    // force to not allow html and images
+
+    print_description_row(html_entity_decode($bbcode_parser->parse($pm['message'], 'privatemessage')), false, 2);
+
+    /*
+      print_description_row( $pm['message'], true, 2 );
+     */
+
+    print_table_footer(2);
 }
 
 print_cp_footer();
 
 // ############## SOME FUNCTIONS ##########################################
 
-function user_name_cell ($pm, $term = 'from')
+function user_name_cell($user_name, $user_id = 0)
 {
-  global $vbulletin, $usermenus, $vbphrase;
+    global $vbulletin, $usermenus, $vbphrase;
 
-  $out = '';
-
-  $usergroupid = $pm[$term.'usergroupid'];
-  $username    = stripslashes($pm[$term.'opentag']) . $pm[$term.'username'] . stripslashes($pm[$term.'closetag']);
-
-  $elid = rand() . '_' . rand() . '_';
-
-  if ( $pm[$term.'userid'] > 0 )
-  {
-    $out .= "<span id=\"usermenu_uid_" . $elid . $pm[$term.'userid'] . "\" class=\"vbmenu_control\">"
-         .  "<script type=\"text/javascript\">vbmenu_register(\"usermenu_uid_" . $elid . $pm[$term.'userid'] . "\" ); </script>"
-         .  "</span>&nbsp;";
-  }
-
-  // show linked username only for existing users
-  if ( $pm[$term.'userid'] > 0 && $pm[$term.'userid_check'] == $pm[$term.'userid'] ) {
-    $out .= "<a target=\"_blank\" href=\"" . $vbulletin->options['bburl'] . "/member.php?" . $vbulletin->session->vars['sessionurl'] . "u=" . $pm[$term.'userid'] . "\"><b>" . $username . "</b></a>";
-  } else {
-    $out .= "<b>" . $username . "</b>";
-  }
-
-  if ( $pm[$term.'userid'] > 0 )
-  {
-    $usermenus[$elid.$pm[$term.'userid']] =
-        "<div class=\"vbmenu_popup\" id=\"usermenu_uid_" . $elid . $pm[$term.'userid'] . "_menu\" style=\"display:none\">"
-      . "<table cellpadding=\"4\" cellspacing=\"1\" border=\"0\">"
-      . "<tr>"
-      . "  <td class=\"vbmenu_option\"><a href=\"?" . $vbulletin->session->vars['sessionurl'] . "search_context=userid&keywords=" . urlencode( $pm[$term.'userid'] ) . "\">" . $vbphrase['private_messages'] . " " . $pm[$term.'username'] . "</a></td>"
-      . "</tr>";
-
-    if ($pm[$term.'userid_check'] == $pm[$term.'userid'])
+    static $users;
+    if (empty($users) OR (is_array($users) AND !array_key_exists($user_name, $users)))
     {
-      $usermenus[$elid.$pm[$term.'userid']] .=
-          "<tr>"
-        . "  <td class=\"vbmenu_option\"><a target=\"_blank\" href=\"user.php?" . $vbulletin->session->vars['sessionurl'] . "do=edit&u="   . $pm[$term.'userid'] . "\">" . $vbphrase['edit_user_profile'] . "</a></td>"
-        . "</tr>";
+        $users[$user_name] = verify_id('user', $user_id, false);
     }
 
-    $usermenus[$elid.$pm[$term.'userid']] .=
-        "</table>"
-      . "</div>";
-  }
+    // show linked username only for existing users
+    if (!$users[$user_name] OR 0 > $user_id)
+    {
+        return "&nbsp;<b>" . $user_name . "</b>";
+    }
+    $elid = rand() . '_' . rand() . '_' . $user_id;
 
-  return $out;
+    $out = "<span id=\"usermenu_uid_" . $elid . "\" class=\"vbmenu_control\">"
+        . "<script type=\"text/javascript\">vbmenu_register(\"usermenu_uid_" . $elid . "\" ); </script>"
+        . "</span>&nbsp;"
+        . "<a target=\"_blank\" href=\"" . $vbulletin->options['bburl'] . "/member.php?" . $vbulletin->session->vars['sessionurl'] . "u=" . $user_id . "\"><b>" . $user_name . "</b></a>";
+
+    $usermenus[$elid] =
+        "<div class=\"vbmenu_popup\" id=\"usermenu_uid_" . $elid . "_menu\" style=\"display:none\">"
+        . "<table cellpadding=\"4\" cellspacing=\"1\" border=\"0\">"
+        . "<tr>"
+        . "  <td class=\"vbmenu_option\"><a href=\"?" . $vbulletin->session->vars['sessionurl'] . "userid=" . urlencode($user_id) . "\">" . $vbphrase['private_messages'] . " " . $user_name . "</a></td>"
+        . "</tr>"
+        . "<tr>"
+        . "  <td class=\"vbmenu_option\"><a target=\"_blank\" href=\"user.php?" . $vbulletin->session->vars['sessionurl'] . "do=edit&u=" . $user_id . "\">" . $vbphrase['edit_user_profile'] . "</a></td>"
+        . "</tr>"
+        . "</table>"
+        . "</div>";
+
+    return $out;
 }
 
+/* * ******************************************* */
 
-function rcd_pm_log_get ($rows, $page, $count = false, $counter = 0)
+function rcd_pm_get_count_total_count($user_name = '', $keywords = '')
 {
-  global $db;
-  global $vbulletin;
-
-  $res    = null;
-  $where  = null;
-  $where1 = null;
-  $where2 = null;
-  $limit  = "";
-  $order  = "";
-  $plusrows = 0;
-
-  ($hook = vBulletinHook::fetch_hook('pmlog_search_start')) ? eval($hook) : false;
-
-  if ($where === null)
-  {
-    $where = " WHERE 1 ";
-
-    // are there any search terms?
-    if ($vbulletin->GPC['search_context'])
+    global $db;
+    $sql_draft = 'SELECT
+                        COUNT(pm.logid) AS count
+                    FROM
+                        ' . TABLE_PREFIX . 'rcd_log_pm AS pm
+                    WHERE
+                ';
+    $keywords_condition = '';
+    if ($keywords)
     {
-      switch ($vbulletin->GPC['search_context'])
-      {
-        case "text":
-          /*
-          $where1 = " MATCH (PM.`title`  ) AGAINST ('" . $db->escape_string($vbulletin->GPC['keywords']) . "') ";
-          $where2 = " MATCH (PM.`message`) AGAINST ('" . $db->escape_string($vbulletin->GPC['keywords']) . "') ";
-          */
-          if (strlen($vbulletin->GPC['keywords']))
-          {
-            $where1 = " PM.`title`   LIKE '%" . $db->escape_string($vbulletin->GPC['keywords']) . "%'";
-            $where2 = " PM.`message` LIKE '%" . $db->escape_string($vbulletin->GPC['keywords']) . "%'";
-          }
-          /*
-          else
-          {
-            $where1 = '1'; //" PM.`title`   = ''";
-            $where2 = '1'; //" PM.`message` = ''";
-          }
-          */
-          if (strlen($where1) && strlen($where2))
-          {
-            $where .= " AND (" . $where1 . " OR " . $where2 . ") ";
-            $where1 = null;
-            $where2 = null;
-          }
-          break;
-        case "user":
-          /*
-          $userid = rcd_pm_get_uid_by_name($vbulletin->GPC['keywords']);
-          $where1 = " PM.`fromuserid` = '" . intval($userid) . "' ";
-          $where2 = " PM.`touserid`   = '" . intval($userid) . "' ";
-          */
-          if (strlen($vbulletin->GPC['keywords']))
-          {
-            $where1 = " PM.`fromusername` = '" . $db->escape_string(htmlspecialchars_uni($vbulletin->GPC['keywords'])) . "' ";
-            $where2 = " PM.`tousername`   = '" . $db->escape_string(htmlspecialchars_uni($vbulletin->GPC['keywords'])) . "' ";
-          }
-          /*
-          else
-          {
-            $where1 = " PM.`fromusername` = '' ";
-            $where2 = " PM.`tousername`   = '' ";
-          }
-          */
-          if (strlen($where1) && strlen($where2))
-            $where .= " AND (" . $where1 . " OR " . $where2 . ") ";
-          //unset($userid);
-          break;
-        case "userid":
-          /*
-          $where1 = " PM.`fromuserid` = '" . intval($vbulletin->GPC['keywords']) . "' ";
-          $where2 = " PM.`touserid`   = '" . intval($vbulletin->GPC['keywords']) . "' ";
-          */
-          if (strlen($vbulletin->GPC['keywords']))
-          {
-            $username = rcd_pm_get_name_by_uid($vbulletin->GPC['keywords']);
-//            $where1 = " PM.`fromusername` = '" . $db->escape_string(htmlspecialchars_uni($username)) . "' ";
-//            $where2 = " PM.`tousername`   = '" . $db->escape_string(htmlspecialchars_uni($username)) . "' ";
-            $where1 = " PM.`fromusername` = '" . $db->escape_string($username) . "' ";
-            $where2 = " PM.`tousername`   = '" . $db->escape_string($username) . "' ";
-            unset($username);
-          }
-          /*
-          else
-          {
-            $where1 = '1'; //" PM.`fromusername` = '' ";
-            $where2 = '1'; //" PM.`tousername`   = '' ";
-          }
-          */
-          if (strlen($where1) && strlen($where2))
-            $where .= " AND (" . $where1 . " OR " . $where2 . ") ";
-          break;
-      }
-
-      switch ($vbulletin->GPC['page'])
-      {
-        case "last":
-          $order  = " ORDER BY `logid` ASC ";
-          $page   = 1;
-          if (!$count) $vbulletin->GPC['pagenumber'] = ceil($counter / $rows);
-          $rows1  = $counter % $rows;
-          $rows   = $counter > 0
-                      ? ($rows1 > 0 ? $rows1 : $rows)
-                      : $rows;
-          unset($rows1);
-          break;
-        case "next":
-          $limit .= " AND PM.`logid` < " . intval($vbulletin->GPC['nextlimit']);
-          $order  = " ORDER BY `logid` DESC ";
-          $page   = 1;
-          if (!$count) $vbulletin->GPC['pagenumber'] += 1;
-          break;
-        case "prev":
-          $limit .= " AND PM.`logid` > " . intval($vbulletin->GPC['prevlimit']);
-          $order  = " ORDER BY `logid` ASC ";
-          $page   = 1;
-          if (!$count) $vbulletin->GPC['pagenumber'] -= 1;
-          break;
-        case "first":
-        case "default":
-          $order  = " ORDER BY `logid` DESC ";
-          $page   = 1;
-          if (!$count) $vbulletin->GPC['pagenumber'] = 1;
-          break;
-      }
-
-      $plusrows = 1;
+        $keywords_condition = rcd_pm_get_kewords_condition($keywords);
+    }
+    if (!empty($user_name))
+    {
+        $sql = 'SELECT SUM(cr.count) AS count
+                FROM((' .
+            $sql_draft .
+            ' fromusername = \'' . $user_name . '\' ' .
+            ($keywords_condition ? ' AND ' . $keywords_condition : '') .
+            ') UNION (' .
+            $sql_draft . ' tousername = \'' . $user_name . '\' ' .
+            ($keywords_condition ? ' AND ' . $keywords_condition : '') .
+            ')) AS cr';
     }
     else
     {
-      $order  = " ORDER BY `logid` DESC ";
+        $sql = 'SELECT
+                    COUNT(pm.logid) AS count
+                FROM
+                    ' . TABLE_PREFIX . 'rcd_log_pm AS pm';
+        if ($keywords_condition)
+        {
+            $sql .= ' WHERE ' . $keywords_condition;
+        }
     }
-  }
+    $pm = $db->query_first($sql);
 
-  ($hook = vBulletinHook::fetch_hook('pmlog_search_terms')) ? eval($hook) : false;
-
-  if ($count)
-  {
-    ($hook = vBulletinHook::fetch_hook('pmlog_search_count')) ? eval($hook) : false;
-
-    if ($res === null)
-    {
-      if ($where1 !== null && $where2 !== null)
-      {
-        $sql = "
-          SELECT COUNT(*) AS `Count` FROM (
-            (SELECT PM.`logid`
-             FROM `" . TABLE_PREFIX . "rcd_log_pm` AS PM WHERE " . $where1 . ")
-            UNION DISTINCT
-            (SELECT PM.`logid`
-             FROM `" . TABLE_PREFIX . "rcd_log_pm` AS PM WHERE " . $where2 . ")
-          ) AS PMRes";
-      }
-      else
-      {
-        $sql = "
-          SELECT
-            COUNT( PM.`logid` ) AS `Count`
-          FROM
-            `" . TABLE_PREFIX . "rcd_log_pm` AS PM
-          " . $where;
-      }
-
-      $res = $db->query_first($sql);
-      $res = $res['Count'];
-    }
-  }
-  else
-  {
-    $logids = null;
-
-    # markid shows if next page exists
-    $markid = null;
-
-    ($hook = vBulletinHook::fetch_hook('pmlog_search_messages')) ? eval($hook) : false;
-
-    if ($logids === null)
-    {
-      $logids = array();
-
-      $reslimit = " LIMIT " . (($page - 1) * $rows) . ", " . ($rows + $plusrows);
-
-      if ($where1 !== null && $where2 !== null)
-      {
-        $sql = "
-          (SELECT PM.`logid`
-           FROM `" . TABLE_PREFIX . "rcd_log_pm` AS PM WHERE " . $where1 . $limit . $order . $reslimit . ")
-          UNION DISTINCT
-          (SELECT PM.`logid`
-           FROM `" . TABLE_PREFIX . "rcd_log_pm` AS PM WHERE " . $where2 . $limit . $order . $reslimit . ")
-          " . $order . $reslimit;
-      }
-      else
-      {
-        $sql = "
-          SELECT
-            PM.`logid`
-          FROM
-            `" . TABLE_PREFIX . "rcd_log_pm` AS PM
-          " . $where . " " . $limit . "
-          " . $order . $reslimit;
-      }
-
-      $result = $db->query_read($sql);
-
-      while($a = $db->fetch_array($result)) { $logids[] = $a['logid']; }
-
-      if ($plusrows && count($logids) > $rows)
-        $markid = array_pop($logids);
-
-      unset($result);
-    }
-
-    if ($res === null AND count($logids))
-    {
-      $res = array();
-
-      $sql = "
-        SELECT
-          PM.*,
-          UserT.`userid`      AS `touserid_check`  ,
-          UserT.`usergroupid` AS `tousergroupid`   ,
-          UGrpT.`opentag`     AS `toopentag`       ,
-          UGrpT.`closetag`    AS `toclosetag`      ,
-          UserF.`userid`      AS `fromuserid_check`,
-          UserF.`usergroupid` AS `fromusergroupid` ,
-          UGrpF.`opentag`     AS `fromopentag`     ,
-          UGrpF.`closetag`    AS `fromclosetag`
-        FROM
-                    `" . TABLE_PREFIX . "rcd_log_pm` AS PM
-          LEFT JOIN `" . TABLE_PREFIX . "user`       AS UserT
-            ON( PM.`touserid`       = UserT.`userid`      )
-          LEFT JOIN `" . TABLE_PREFIX . "usergroup`  AS UGrpT
-            ON( UserT.`usergroupid` = UGrpT.`usergroupid` )
-          LEFT JOIN `" . TABLE_PREFIX . "user`       AS UserF
-            ON( PM.`fromuserid`     = UserF.`userid`      )
-          LEFT JOIN `" . TABLE_PREFIX . "usergroup`  AS UGrpF
-            ON( UserF.`usergroupid` = UGrpF.`usergroupid` )
-        WHERE
-          PM.`logid` IN(" . implode(",", $logids) . ")
-        ORDER BY
-          PM.`logid` DESC 
-      ";
-
-      $result = $db->query_read($sql);
-
-      while ($a = $db->fetch_array($result)) { $res[] = $a; }
-
-      if ($markid != null)
-        $res[] = array('markid' => $markid);
-    }
-  }
-
-  return $res;
+    return (int) $pm['count'];
 }
 
-
-function rcd_pm_get_uid_by_name ($username = '')
+function rcd_pm_get_kewords_condition($keywords)
 {
-  global $db;
-
-  if(empty($username))
-    return 0;
-
-  $search_arr = array(
-    array('userid'    , 'user'      , 'username'    ),
-    array('fromuserid', 'rcd_log_pm', 'fromusername'),
-    array('touserid'  , 'rcd_log_pm', 'tousername'  ),
-  );
-
-  $userid = 0;
-
-  foreach ($search_arr AS $search_cntx)
-  {
-    $sql = "
-      SELECT
-        `$search_cntx[0]`
-      FROM
-        `" . TABLE_PREFIX . "$search_cntx[1]`
-      WHERE
-        `$search_cntx[2]` = '"
-          . $db->escape_string(htmlspecialchars_uni($username))
-          . "'
-      LIMIT
-        1
-    ";
-
-    $user = $db->query_first($sql);
-
-    if (is_array($user))
+    global $db;
+    $condition = '';
+    if (!empty($keywords))
     {
-      $userid = $user["$search_cntx[0]"];
-      break;
+        $keywords = $db->escape_string($keywords);
+        $condition = "(pm.`title` LIKE '%" . $keywords . "%'
+                OR pm.`message` LIKE '%" . $keywords . "%')";
     }
-  }
-
-  return $userid;
+    return $condition;
 }
 
-
-
-function rcd_pm_get_name_by_uid ($userid = 0)
+function rcd_pm_construct_button($type)
 {
-  global $db;
-
-  if (!intval($userid))
-    return '';
-
-  $search_arr = array(
-    array('username'    , 'user'      , 'userid'    ),
-    array('fromusername', 'rcd_log_pm', 'fromuserid'),
-    array('tousername'  , 'rcd_log_pm', 'touserid'  ),
-  );
-
-  $username = '';
-
-  foreach ($search_arr AS $search_cntx)
-  {
-    $sql = "
-      SELECT
-        `$search_cntx[0]`
-      FROM
-        `" . TABLE_PREFIX . "$search_cntx[1]`
-      WHERE
-        `$search_cntx[2]` = '" . intval($userid) . "'
-      LIMIT
-        1
-    ";
-
-    $user = $db->query_first($sql);
-
-    if (is_array($user))
+    global $vbphrase;
+    switch ($type)
     {
-      $username = $user["$search_cntx[0]"];
-      break;
+        case MOVE_FIRST: $button_text = '&laquo; ' . $vbphrase['first_page'];
+            break;
+        case MOVE_PREV: $button_text = '&laquo; ' . $vbphrase['prev_page'];
+            break;
+        case MOVE_NEXT: $button_text = $vbphrase['next_page'] . ' &raquo;';
+            break;
+        case MOVE_LAST: $button_text = $vbphrase['last_page'] . ' &raquo;';
+            break;
     }
-  }
-
-  return $username;
-}
-
-
-function rcd_pm_log_get_message ($logid)
-{
-  global $db;
-
-  $sql = "
-    SELECT
-      PM.*,
-      UserT.`userid` AS `touserid_check`,
-      UserF.`userid` AS `fromuserid_check`
-    FROM
-                `" . TABLE_PREFIX . "rcd_log_pm` AS PM
-      LEFT JOIN `" . TABLE_PREFIX . "user`       AS UserT
-        ON( PM.`touserid`   = UserT.`userid` )
-      LEFT JOIN `" . TABLE_PREFIX . "user`       AS UserF
-        ON( PM.`fromuserid` = UserF.`userid` )
-    WHERE
-      PM.`logid` = " . $logid . "
-    LIMIT
-      1
-  ";
-
-  $pm = $db->query_first($sql);
-
-  return $pm;
+    $str = '<input type="submit" class="button" value="' . $button_text . '" '
+        . 'tabindex="1" onclick="'
+        . 'document.forms[\'paging_helper\'].move.value = \'' . $type . '\';'
+        . '" />';
+    return $str;
 }
