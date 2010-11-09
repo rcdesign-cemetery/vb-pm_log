@@ -66,5 +66,5 @@ function create_private_message_url($user_id)
 {
     global $vbulletin, $session;
     $admincpdir = $vbulletin->config['Misc']['admincpdir'];
-    return $admincpdir . '/index.php?loc=rcd_pm_log.php%3F' . $session['sessionurl'] . 'search_context%3Duserid%26keywords%3D' . $user_id;
+    return $admincpdir . '/index.php?loc=rcd_pm_log.php%3F' . $session['sessionurl'] . 'userid%3D' . $user_id;
 }
