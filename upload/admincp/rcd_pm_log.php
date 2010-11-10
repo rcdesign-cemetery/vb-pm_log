@@ -108,7 +108,7 @@ if ($_REQUEST['do'] == 'search')
         // -->
     </script>
     <script type="text/javascript" src="<?php echo $vbulletin->options['bburl'] ?>/clientscript/vbulletin_menu.js"></script>
-    <script type="text/javascript" src="<?php echo $vbulletin->options['bburl'] ?>/clientscript/vbulletin_ajax_namesugg.js"></script>
+    <script type="text/javascript" src="<?php echo $vbulletin->options['bburl'] ?>/clientscript/vbulletin_ajax_suggest.js"></script>
 
 <?php
     $vbulletin->input->clean_array_gpc('r', array(
@@ -120,7 +120,7 @@ if ($_REQUEST['do'] == 'search')
         'keywords' => TYPE_STR,
         'move' => TYPE_INT,
         'page_num' => TYPE_INT,
-        'toral_count' => TYPE_INT,
+        'total_count' => TYPE_INT,
     ));
 
     if (!$vbulletin->GPC_exists['move'] OR 0 == $vbulletin->GPC['move'])
@@ -164,7 +164,7 @@ if ($_REQUEST['do'] == 'search')
 
     if (!$vbulletin->GPC['total_count'])
     {
-        $vbulletin->GPC['total_count'] = rcd_pm_get_count_total_count($user_name, $search_keywords);
+        $vbulletin->GPC['total_count'] = rcd_pm_get_total_count($user_name, $search_keywords);
     }
 
     $total_count = $vbulletin->GPC['total_count'];
@@ -180,13 +180,13 @@ if ($_REQUEST['do'] == 'search')
                     FROM
                         ' . TABLE_PREFIX . 'rcd_log_pm AS pm';
 
-    $order = 'ASC';
+    $order = 'DESC';
 
     $limit = ($perpage + 1);
     switch ($move)
     {
         case MOVE_LAST:
-            $order = 'DESC';
+            $order = 'ASC';
             $limit = (int) fmod($total_count, $perpage);
             if (0 == $limit)
             {
@@ -197,15 +197,19 @@ if ($_REQUEST['do'] == 'search')
         case MOVE_NEXT:
             if ($endlogid)
             {
-                $conditions[] = 'pm.logid >= ' . $endlogid;
+                $conditions[] = 'pm.logid <= ' . $endlogid;
             }
             $vbulletin->GPC['page_num']++;
             break;
         case MOVE_PREV:
-            $order = 'DESC';
-            $conditions[] = 'pm.logid <' . $startlogid;
-            $vbulletin->GPC['page_num']--;
-            break;
+            if (2 < $vbulletin->GPC['page_num'])
+            {
+                $order = 'ASC';
+                $conditions[] = 'pm.logid >=' . $startlogid;
+                $vbulletin->GPC['page_num']--;
+                break;
+            }
+            $move = MOVE_FIRST;
         case MOVE_FIRST:
         default:
             $vbulletin->GPC['page_num'] = 1;
@@ -216,19 +220,16 @@ if ($_REQUEST['do'] == 'search')
         $conditions[] = rcd_pm_get_kewords_condition($search_keywords);
     }
     $order = ' ORDER BY logid ' . $order;
-    $limit = ' LIMIT ' . $limit;
 
     if (!empty($user_name))
     {
         $sql_draft .= ' WHERE ';
+        $condition_tale = (!empty($conditions) ? ' AND ' . implode(' AND ', $conditions) : '') .
+            $order .  ' LIMIT ' .$limit;
         $sql = '(' . $sql_draft .
-            ' fromusername = \'' . $user_name . '\' ' .
-            (!empty($conditions) ? ' AND ' . implode(' AND ', $conditions) : '') .
-            $order . $limit .
+            ' fromusername = \'' . $user_name . '\' ' . $condition_tale .
             ') UNION (' .
-            $sql_draft . ' tousername = \'' . $user_name . '\' ' .
-            (!empty($conditions) ? ' AND ' . implode(' AND ', $conditions) : '') .
-            $order . $limit . ')';
+            $sql_draft . ' tousername = \'' . $user_name . '\' ' . $condition_tale . ')';
     }
     else
     {
@@ -237,7 +238,7 @@ if ($_REQUEST['do'] == 'search')
         {
             $sql .= ' WHERE ' . implode(' AND ', $conditions);
         }
-        $sql .= $order . $limit;
+        $sql .= $order .  ' LIMIT ' .$limit;
     }
 
     $res = $db->query_read($sql);
@@ -246,14 +247,26 @@ if ($_REQUEST['do'] == 'search')
     while ($row = $db->fetch_array($res))
     {
         $results[$row['logid']] = $row;
+        $user_list[] = $row['fromuserid'];
+        $user_list[] = $row['touserid'];
     }
     if (!count($results))
     {
         print_stop_message('rcd_pm_log_not_found');
     }
 
-    ksort($results);
-    $results = array_slice($results, 0, $perpage + 1);
+    if (!empty($user_name) AND (MOVE_LAST == $move OR MOVE_PREV == $move))
+    {
+        // after union query we have double set of data and must found actual data before sort
+        ksort($results);
+        $results = array_slice($results, 0, $limit);
+        rsort($results);
+    }
+    else
+    {
+        rsort($results);
+        $results = array_slice($results, 0, $limit);
+    }
 
     if (count($results) > $perpage)
     {
@@ -264,11 +277,12 @@ if ($_REQUEST['do'] == 'search')
     }
 
     $startlogid = $results[0]['logid'];
+
     if (empty($vbulletin->GPC['firstlogid']))
     {
         $vbulletin->GPC['firstlogid'] = $startlogid;
     }
-    if ($vbulletin->GPC['firstlogid'] < $startlogid)
+    if ($vbulletin->GPC['firstlogid'] > $startlogid)
     {
         $firstpage = rcd_pm_construct_button(MOVE_FIRST);
         $prevpage = rcd_pm_construct_button(MOVE_PREV);
@@ -321,6 +335,25 @@ if ($_REQUEST['do'] == 'search')
 
     print_cells_row($header, true, false, -10);
 
+    // prepare user name colors
+    $unique_users = array_unique($user_list);
+    $sql = 'SELECT
+              user.`userid` ,
+              usergroup.`opentag`,
+              usergroup.`closetag`
+            FROM ' . TABLE_PREFIX . 'user AS user
+            LEFT JOIN ' . TABLE_PREFIX . 'usergroup  AS usergroup
+                ON user.`usergroupid` = usergroup.`usergroupid`
+            WHERE
+                user.userid IN ('. implode(', ', $unique_users) .')';
+    $res = $db->query_read($sql);
+    $user_name_tags = array();
+    while ($row = $db->fetch_array($res))
+    {
+        $user_name_tags[$row['userid']]['opentag'] = $row['opentag'];
+        $user_name_tags[$row['userid']]['closetag'] = $row['closetag'];
+    }
+
     // print contents rows
     foreach ($results AS $pm)
     {
@@ -341,7 +374,7 @@ if ($_REQUEST['do'] == 'search')
     print_table_footer(4, "$firstpage $prevpage &nbsp; $nextpage $lastpage");
 
 
-// now print search form
+    // now print search form
     print_form_header('rcd_pm_log', 'search');
     print_table_header($vbphrase['search'], 2);
 
@@ -466,7 +499,7 @@ print_cp_footer();
 
 function user_name_cell($user_name, $user_id = 0)
 {
-    global $vbulletin, $usermenus, $vbphrase;
+    global $vbulletin, $usermenus, $vbphrase, $user_name_tags;
 
     static $users;
     if (empty($users) OR (is_array($users) AND !array_key_exists($user_name, $users)))
@@ -484,7 +517,8 @@ function user_name_cell($user_name, $user_id = 0)
     $out = "<span id=\"usermenu_uid_" . $elid . "\" class=\"vbmenu_control\">"
         . "<script type=\"text/javascript\">vbmenu_register(\"usermenu_uid_" . $elid . "\" ); </script>"
         . "</span>&nbsp;"
-        . "<a target=\"_blank\" href=\"" . $vbulletin->options['bburl'] . "/member.php?" . $vbulletin->session->vars['sessionurl'] . "u=" . $user_id . "\"><b>" . $user_name . "</b></a>";
+        . "<a target=\"_blank\" href=\"" . $vbulletin->options['bburl'] . "/member.php?" . $vbulletin->session->vars['sessionurl'] . "u=" . $user_id 
+        . "\"><b>" . $user_name_tags[$user_id]['opentag'] . $user_name . $user_name_tags[$user_id]['closetag'] . "</b></a>";
 
     $usermenus[$elid] =
         "<div class=\"vbmenu_popup\" id=\"usermenu_uid_" . $elid . "_menu\" style=\"display:none\">"
@@ -503,15 +537,10 @@ function user_name_cell($user_name, $user_id = 0)
 
 /* * ******************************************* */
 
-function rcd_pm_get_count_total_count($user_name = '', $keywords = '')
+function rcd_pm_get_total_count($user_name = '', $keywords = '')
 {
     global $db;
-    $sql_draft = 'SELECT
-                        COUNT(pm.logid) AS count
-                    FROM
-                        ' . TABLE_PREFIX . 'rcd_log_pm AS pm
-                    WHERE
-                ';
+    
     $keywords_condition = '';
     if ($keywords)
     {
@@ -519,7 +548,13 @@ function rcd_pm_get_count_total_count($user_name = '', $keywords = '')
     }
     if (!empty($user_name))
     {
-        $sql = 'SELECT SUM(cr.count) AS count
+        $sql_draft = 'SELECT
+                        pm.logid AS logid
+                    FROM
+                        ' . TABLE_PREFIX . 'rcd_log_pm AS pm
+                    WHERE
+                ';
+        $sql = 'SELECT DISTINCT  COUNT(cr.logid) AS count
                 FROM((' .
             $sql_draft .
             ' fromusername = \'' . $user_name . '\' ' .
