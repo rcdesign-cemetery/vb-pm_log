@@ -137,12 +137,9 @@ $admindm->set('admin_view_pm_log', $vbulletin->GPC['admin_view_pm_log']);]]></ph
 		<plugin active="1" executionorder="5">
 			<title>Check permissions</title>
 			<hookname>can_administer</hookname>
-			<phpcode><![CDATA[if ($vbulletin->options['rcd_pm_log_show_link'])
+			<phpcode><![CDATA[if (in_array('adminviewpmlog', $do) AND ($vbulletin->options['rcd_pm_log_show_link']))
 {
-    if (isset($do['adminviewpmlog']))
-    {
-        $return_value = $admin['admin_view_pm_log'] ? true : false;
-    }
+    $return_value = $admin['admin_view_pm_log'] ? true : false;
 }]]></phpcode>
 		</plugin>
 		<plugin active="1" executionorder="5">
@@ -270,7 +267,7 @@ $this->dbobject->query_write("
 			<phrase name="task_rcd_pm_log_clean_cron_title" date="1212168478" username="Wildev" version="1.0"><![CDATA[Clean Log]]></phrase>
 		</phrasetype>
 		<phrasetype name="Error Messages" fieldname="error">
-			<phrase name="rcd_pm_log_not_found" date="1290158248" username="varnak" version=""><![CDATA[Nothing found]]></phrase>
+			<phrase name="rcd_pm_log_not_found" date="1290158116" username="varnak" version=""><![CDATA[Nothing found]]></phrase>
 		</phrasetype>
 		<phrasetype name="GLOBAL" fieldname="global">
 			<phrase name="rcd_pm_log" date="1211812410" username="Wildev" version="1.0"><![CDATA[PM Log]]></phrase>

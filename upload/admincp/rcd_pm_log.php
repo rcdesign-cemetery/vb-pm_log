@@ -39,6 +39,7 @@ $actiontemplates = array();
 require_once('./global.php');
 require_once(DIR . '/includes/adminfunctions.php');
 require_once(DIR . '/includes/adminfunctions_template.php');
+require_once(DIR . '/includes/functions_rcd_pm_log.php');
 
 // ######################## CHECK ADMIN PERMISSIONS #######################
 if (!(can_administer('adminviewpmlog') OR can_administer_pm_log()))
