@@ -267,13 +267,15 @@ $this->dbobject->query_write("
 			<phrase name="task_rcd_pm_log_clean_cron_title" date="1212168478" username="Wildev" version="1.0"><![CDATA[Clean Log]]></phrase>
 		</phrasetype>
 		<phrasetype name="Error Messages" fieldname="error">
-			<phrase name="rcd_pm_log_not_found" date="1290158116" username="varnak" version=""><![CDATA[Nothing found]]></phrase>
+			<phrase name="rcd_pm_log_invalid_parameters" date="1292409422" username="varnak" version=""><![CDATA[Invalid input parameters]]></phrase>
+			<phrase name="rcd_pm_log_message_not_found" date="1292409543" username="varnak" version=""><![CDATA[Message not found.]]></phrase>
 		</phrasetype>
 		<phrasetype name="GLOBAL" fieldname="global">
 			<phrase name="rcd_pm_log" date="1211812410" username="Wildev" version="1.0"><![CDATA[PM Log]]></phrase>
 			<phrase name="rcd_pm_log_dump_from" date="1236025694" username="Dimit" version=""><![CDATA[From]]></phrase>
 			<phrase name="rcd_pm_log_dump_to" date="1236025733" username="Dimit" version=""><![CDATA[To]]></phrase>
 			<phrase name="rcd_pm_log_ip" date="1236025625" username="Dimit" version=""><![CDATA[IP]]></phrase>
+			<phrase name="rcd_pm_log_not_found" date="1292409064" username="varnak" version=""><![CDATA[Nothing found]]></phrase>
 			<phrase name="rcd_pm_log_sent_date" date="1236025764" username="Dimit" version=""><![CDATA[Sent Date]]></phrase>
 			<phrase name="rcd_pm_log_view_message" date="1236025862" username="Dimit" version=""><![CDATA[View Message]]></phrase>
 		</phrasetype>

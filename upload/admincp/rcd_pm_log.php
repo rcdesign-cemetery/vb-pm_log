@@ -173,7 +173,7 @@ if ($_REQUEST['do'] == 'search')
         (!$startlogid AND MOVE_PREV == $move) OR
         (!$startlogid AND MOVE_FIRST == $move))
     {
-        print_stop_message('rcd_pm_log_not_found');
+        print_stop_message('rcd_pm_log_invalid_parameters');
     }
 
     $sql_draft = 'SELECT
@@ -251,129 +251,135 @@ if ($_REQUEST['do'] == 'search')
         $user_list[] = $row['fromuserid'];
         $user_list[] = $row['touserid'];
     }
-    if (!count($results))
+    if (count($results))
     {
-        print_stop_message('rcd_pm_log_not_found');
-    }
+        if (!empty($user_name) AND (MOVE_LAST == $move OR MOVE_PREV == $move))
+        {
+            // after union query we have double set of data and must found actual data before sort
+            ksort($results);
+            $results = array_slice($results, 0, $limit);
+            rsort($results);
+        }
+        else
+        {
+            rsort($results);
+            $results = array_slice($results, 0, $limit);
+        }
 
-    if (!empty($user_name) AND (MOVE_LAST == $move OR MOVE_PREV == $move))
-    {
-        // after union query we have double set of data and must found actual data before sort
-        ksort($results);
-        $results = array_slice($results, 0, $limit);
-        rsort($results);
+        if (count($results) > $perpage)
+        {
+            $last_row = array_pop($results);
+            $endlogid = $last_row['logid'];
+            $nextpage = rcd_pm_construct_button(MOVE_NEXT);
+            $lastpage = rcd_pm_construct_button(MOVE_LAST);
+        }
+
+        $startlogid = $results[0]['logid'];
+
+        if (empty($vbulletin->GPC['firstlogid']))
+        {
+            $vbulletin->GPC['firstlogid'] = $startlogid;
+        }
+        if ($vbulletin->GPC['firstlogid'] > $startlogid)
+        {
+            $firstpage = rcd_pm_construct_button(MOVE_FIRST);
+            $prevpage = rcd_pm_construct_button(MOVE_PREV);
+        }
+
+        print_form_header('rcd_pm_log', 'search', false, true, 'paging_helper');
+
+        construct_hidden_code("page_num", $vbulletin->GPC['page_num']);
+        construct_hidden_code("move", '');
+
+        construct_hidden_code('firstlogid', $vbulletin->GPC['firstlogid']);
+        if (isset($startlogid))
+        {
+            construct_hidden_code('startlogid', $startlogid);
+        }
+        if (isset($endlogid))
+        {
+            construct_hidden_code('endlogid', $endlogid);
+        }
+        if (isset($user_name))
+        {
+            construct_hidden_code('username', $user_name);
+        }
+        construct_hidden_code('total_count', $total_count);
+
+        if (strlen($search_keywords))
+        {
+            construct_hidden_code("keywords", $search_keywords);
+        }
+
+        $from_num = ($vbulletin->GPC['page_num'] - 1) * $perpage + 1;
+
+        $to_num = ($vbulletin->GPC['page_num'] - 1) * $perpage + $perpage;
+
+        if ($counter !== null && $to_num > $counter)
+        {
+            $to_num = $counter;
+        }
+
+        $tablename = $vbphrase['private_messages'] .
+                        ' (' . $from_num . '-' .
+                        ($to_num < $total_count ? $to_num : $total_count) . '/' . $total_count . ')';
+
+        print_table_header($tablename, 4);
+
+        // print table headers
+        $header = array();
+        $header[] = $vbphrase['rcd_pm_log_dump_from'];
+        $header[] = $vbphrase['subject'];
+        $header[] = $vbphrase['rcd_pm_log_dump_to'];
+        $header[] = $vbphrase['date'];
+
+        print_cells_row($header, true, false, -10);
+
+        // prepare user name colors
+        $unique_users = array_unique($user_list);
+        $sql = 'SELECT
+                  user.`userid` ,
+                  usergroup.`opentag`,
+                  usergroup.`closetag`
+                FROM ' . TABLE_PREFIX . 'user AS user
+                LEFT JOIN ' . TABLE_PREFIX . 'usergroup  AS usergroup
+                    ON user.`usergroupid` = usergroup.`usergroupid`
+                WHERE
+                    user.userid IN ('. implode(', ', $unique_users) .')';
+        $res = $db->query_read($sql);
+        $user_name_tags = array();
+        while ($row = $db->fetch_array($res))
+        {
+            $user_name_tags[$row['userid']]['opentag'] = $row['opentag'];
+            $user_name_tags[$row['userid']]['closetag'] = $row['closetag'];
+        }
+
+        // print contents rows
+        foreach ($results AS $pm)
+        {
+            $row = array();
+
+            $row[] = user_name_cell($pm['fromusername'], $pm['fromuserid']);
+            $row[] = "<a target=\"_blank\" href=\""
+                . $vbulletin->options['bburl'] . "/misc.php?"
+                . $vbulletin->session->vars['sessionurl']
+                . "do=showpm&logid=" . $pm['logid'] . "\" >"
+                . $pm['title'] . "</a>";
+            $row[] = user_name_cell($pm['tousername'], $pm['touserid']);
+            $row[] = vbdate($vbulletin->options['logdateformat'], $pm['dateline']);
+
+            print_cells_row($row, false, false, -10);
+        }
+
+        print_table_footer(4, "$firstpage $prevpage &nbsp; $nextpage $lastpage");
     }
     else
     {
-        rsort($results);
-        $results = array_slice($results, 0, $limit);
+        print_table_start(0);
+        print_table_header($vbphrase['private_messages']);
+		print_description_row($vbphrase['rcd_pm_log_not_found']);
+		print_table_footer(1, '', '', false);
     }
-
-    if (count($results) > $perpage)
-    {
-        $last_row = array_pop($results);
-        $endlogid = $last_row['logid'];
-        $nextpage = rcd_pm_construct_button(MOVE_NEXT);
-        $lastpage = rcd_pm_construct_button(MOVE_LAST);
-    }
-
-    $startlogid = $results[0]['logid'];
-
-    if (empty($vbulletin->GPC['firstlogid']))
-    {
-        $vbulletin->GPC['firstlogid'] = $startlogid;
-    }
-    if ($vbulletin->GPC['firstlogid'] > $startlogid)
-    {
-        $firstpage = rcd_pm_construct_button(MOVE_FIRST);
-        $prevpage = rcd_pm_construct_button(MOVE_PREV);
-    }
-
-    print_form_header('rcd_pm_log', 'search', false, true, 'paging_helper');
-
-    construct_hidden_code("page_num", $vbulletin->GPC['page_num']);
-    construct_hidden_code("move", '');
-
-    construct_hidden_code('firstlogid', $vbulletin->GPC['firstlogid']);
-    if (isset($startlogid))
-    {
-        construct_hidden_code('startlogid', $startlogid);
-    }
-    if (isset($endlogid))
-    {
-        construct_hidden_code('endlogid', $endlogid);
-    }
-    if (isset($user_name))
-    {
-        construct_hidden_code('username', $user_name);
-    }
-    construct_hidden_code('total_count', $total_count);
-
-    if (strlen($search_keywords))
-    {
-        construct_hidden_code("keywords", $search_keywords);
-    }
-
-    $from_num = ($vbulletin->GPC['page_num'] - 1) * $perpage + 1;
-
-    $to_num = ($vbulletin->GPC['page_num'] - 1) * $perpage + $perpage;
-
-    if ($counter !== null && $to_num > $counter)
-        $to_num = $counter;
-
-    $tablename =
-        $vbphrase['private_messages']
-        . ' (' . $from_num . '-' . ($to_num < $total_count ? $to_num : $total_count) . '/' . $total_count . ')';
-
-    print_table_header($tablename, 4);
-
-    // print table headers
-    $header = array();
-    $header[] = $vbphrase['rcd_pm_log_dump_from'];
-    $header[] = $vbphrase['subject'];
-    $header[] = $vbphrase['rcd_pm_log_dump_to'];
-    $header[] = $vbphrase['date'];
-
-    print_cells_row($header, true, false, -10);
-
-    // prepare user name colors
-    $unique_users = array_unique($user_list);
-    $sql = 'SELECT
-              user.`userid` ,
-              usergroup.`opentag`,
-              usergroup.`closetag`
-            FROM ' . TABLE_PREFIX . 'user AS user
-            LEFT JOIN ' . TABLE_PREFIX . 'usergroup  AS usergroup
-                ON user.`usergroupid` = usergroup.`usergroupid`
-            WHERE
-                user.userid IN ('. implode(', ', $unique_users) .')';
-    $res = $db->query_read($sql);
-    $user_name_tags = array();
-    while ($row = $db->fetch_array($res))
-    {
-        $user_name_tags[$row['userid']]['opentag'] = $row['opentag'];
-        $user_name_tags[$row['userid']]['closetag'] = $row['closetag'];
-    }
-
-    // print contents rows
-    foreach ($results AS $pm)
-    {
-        $row = array();
-
-        $row[] = user_name_cell($pm['fromusername'], $pm['fromuserid']);
-        $row[] = "<a target=\"_blank\" href=\""
-            . $vbulletin->options['bburl'] . "/misc.php?"
-            . $vbulletin->session->vars['sessionurl']
-            . "do=showpm&logid=" . $pm['logid'] . "\" >"
-            . $pm['title'] . "</a>";
-        $row[] = user_name_cell($pm['tousername'], $pm['touserid']);
-        $row[] = vbdate($vbulletin->options['logdateformat'], $pm['dateline']);
-
-        print_cells_row($row, false, false, -10);
-    }
-
-    print_table_footer(4, "$firstpage $prevpage &nbsp; $nextpage $lastpage");
-
 
     // now print search form
     print_form_header('rcd_pm_log', 'search');
@@ -431,7 +437,7 @@ if ($_REQUEST['do'] == 'showpm')
 
     if (!$logid)
     {
-        print_stop_message('rcd_pm_log_not_found');
+        print_stop_message('rcd_pm_log_invalid_parameters');
     }
 
     $sql = 'SELECT
@@ -445,7 +451,7 @@ if ($_REQUEST['do'] == 'showpm')
     $pm = $db->query_first($sql);
     if (empty($pm))
     {
-        print_stop_message('rcd_pm_log_not_found');
+        print_stop_message('rcd_pm_log_message_not_found');
     }
 
 
