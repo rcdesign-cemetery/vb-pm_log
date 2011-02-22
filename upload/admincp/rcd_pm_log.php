@@ -228,9 +228,9 @@ if ($_REQUEST['do'] == 'search')
         $condition_tale = (!empty($conditions) ? ' AND ' . implode(' AND ', $conditions) : '') .
             $order .  ' LIMIT ' .$limit;
         $sql = '(' . $sql_draft .
-            ' fromusername = \'' . $user_name . '\' ' . $condition_tale .
+            ' fromusername = \'' . $db->escape_string($user_name) . '\' ' . $condition_tale .
             ') UNION (' .
-            $sql_draft . ' tousername = \'' . $user_name . '\' ' . $condition_tale . ')';
+            $sql_draft . ' tousername = \'' . $db->escape_string($user_name) . '\' ' . $condition_tale . ')';
     }
     else
     {
@@ -564,10 +564,10 @@ function rcd_pm_get_total_count($user_name = '', $keywords = '')
         $sql = 'SELECT DISTINCT  COUNT(cr.logid) AS count
                 FROM((' .
             $sql_draft .
-            ' fromusername = \'' . $user_name . '\' ' .
+            ' fromusername = \'' . $db->escape_string($user_name) . '\' ' .
             ($keywords_condition ? ' AND ' . $keywords_condition : '') .
             ') UNION (' .
-            $sql_draft . ' tousername = \'' . $user_name . '\' ' .
+            $sql_draft . ' tousername = \'' . $db->escape_string($user_name) . '\' ' .
             ($keywords_condition ? ' AND ' . $keywords_condition : '') .
             ')) AS cr';
     }
