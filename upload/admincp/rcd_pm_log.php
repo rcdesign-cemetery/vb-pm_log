@@ -161,6 +161,7 @@ if ($_REQUEST['do'] == 'search')
     if ($vbulletin->GPC['username'])
     {
         $user_name = $vbulletin->GPC['username'];
+        $user_name = strip_blank_ascii($user_name, ' ');
     }
 
     if (!$vbulletin->GPC['total_count'])
@@ -228,9 +229,9 @@ if ($_REQUEST['do'] == 'search')
         $condition_tale = (!empty($conditions) ? ' AND ' . implode(' AND ', $conditions) : '') .
             $order .  ' LIMIT ' .$limit;
         $sql = '(' . $sql_draft .
-            ' fromusername = \'' . $db->escape_string($user_name) . '\' ' . $condition_tale .
+            ' fromusername = \'' . $db->escape_string(htmlspecialchars_uni($user_name)) . '\' ' . $condition_tale .
             ') UNION (' .
-            $sql_draft . ' tousername = \'' . $db->escape_string($user_name) . '\' ' . $condition_tale . ')';
+            $sql_draft . ' tousername = \'' . $db->escape_string(htmlspecialchars_uni($user_name)) . '\' ' . $condition_tale . ')';
     }
     else
     {
@@ -564,10 +565,10 @@ function rcd_pm_get_total_count($user_name = '', $keywords = '')
         $sql = 'SELECT DISTINCT  COUNT(cr.logid) AS count
                 FROM((' .
             $sql_draft .
-            ' fromusername = \'' . $db->escape_string($user_name) . '\' ' .
+            ' fromusername = \'' . $db->escape_string(htmlspecialchars_uni($user_name)) . '\' ' .
             ($keywords_condition ? ' AND ' . $keywords_condition : '') .
             ') UNION (' .
-            $sql_draft . ' tousername = \'' . $db->escape_string($user_name) . '\' ' .
+            $sql_draft . ' tousername = \'' . $db->escape_string(htmlspecialchars_uni($user_name)) . '\' ' .
             ($keywords_condition ? ' AND ' . $keywords_condition : '') .
             ')) AS cr';
     }
