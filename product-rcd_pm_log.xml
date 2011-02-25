@@ -3,7 +3,7 @@
 <product productid="rcd_pm_log" active="1">
 	<title>Private Messages and Email Log</title>
 	<description>Private Messages and Email Loggind and administering</description>
-	<version>3.0</version>
+	<version>3.1</version>
 	<url><![CDATA[http://www.vbulletin.org/forum/misc.php?do=producthelp&pid=rcd_pm_log]]></url>
 	<versioncheckurl><![CDATA[http://www.vbulletin.org/forum/misc.php?do=productcheck&pid=rcd_pm_log]]></versioncheckurl>
 	<apm_releasedate>0</apm_releasedate>
